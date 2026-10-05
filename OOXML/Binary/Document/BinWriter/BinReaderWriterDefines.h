@@ -105,7 +105,14 @@ extern int g_nCurFormatVersion;
 		CustomProperties = 18,
 		Glossary	= 19,
 		Customs		= 20,
-		OForm		= 21
+		OForm		= 21,
+		FontTable	= 22
+	};}
+	namespace c_oSerFontTableTypes{enum c_oSerFontTableTypes
+	{
+		Font	= 0,
+		Name	= 1,
+		AltName	= 2
 	};}
 	namespace c_oSerSigTypes{enum c_oSerSigTypes
 	{

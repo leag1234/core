@@ -10085,6 +10085,33 @@ void BinaryFileWriter::intoBindoc(const std::wstring& sSrcPath)
 			oBinaryCustomsTableWriter.Write(pDocument);
 		this->WriteTableEnd(nCurPos);
 	}
+	if (pDocx && pDocx->m_oMain.fontTable && !pDocx->m_oMain.fontTable->m_arrFonts.empty())
+	{
+		// Font table: names and alternate names (w:altName) of the document fonts. The editor uses the
+		// alternate name to replace a font that is not installed, as Word does.
+		nCurPos = this->WriteTableStart(BinDocxRW::c_oSerTableTypes::FontTable);
+		int nStart = m_oBcw.WriteItemWithLengthStart();
+		for (size_t i = 0; i < pDocx->m_oMain.fontTable->m_arrFonts.size(); ++i)
+		{
+			OOX::CFont* pFont = pDocx->m_oMain.fontTable->m_arrFonts[i];
+			if (!pFont || pFont->m_sName.empty())
+				continue;
+
+			int nFont = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::Font);
+			int nItem = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::Name);
+			m_oBcw.m_oStream.WriteStringW3(pFont->m_sName);
+			m_oBcw.WriteItemEnd(nItem);
+			if (pFont->m_oAltName.IsInit() && !pFont->m_oAltName->empty())
+			{
+				nItem = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::AltName);
+				m_oBcw.m_oStream.WriteStringW3(*pFont->m_oAltName);
+				m_oBcw.WriteItemEnd(nItem);
+			}
+			m_oBcw.WriteItemEnd(nFont);
+		}
+		m_oBcw.WriteItemWithLengthEnd(nStart);
+		this->WriteTableEnd(nCurPos);
+	}
 
 	if (pDocx && pDocx->m_oGlossary.document)
 	{
