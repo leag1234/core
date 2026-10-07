@@ -112,7 +112,8 @@ extern int g_nCurFormatVersion;
 	{
 		Font	= 0,
 		Name	= 1,
-		AltName	= 2
+		AltName	= 2,
+		Family	= 3
 	};}
 	namespace c_oSerSigTypes{enum c_oSerSigTypes
 	{

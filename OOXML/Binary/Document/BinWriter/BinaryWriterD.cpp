@@ -10107,6 +10107,14 @@ void BinaryFileWriter::intoBindoc(const std::wstring& sSrcPath)
 				m_oBcw.m_oStream.WriteStringW3(*pFont->m_oAltName);
 				m_oBcw.WriteItemEnd(nItem);
 			}
+			if (pFont->m_oFamily.IsInit())
+			{
+				// generic family (w:family: roman, swiss, modern, script, decorative, auto): lets the editor
+				// substitute a missing script font by a script font
+				nItem = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::Family);
+				m_oBcw.m_oStream.WriteStringW3(pFont->m_oFamily->ToString());
+				m_oBcw.WriteItemEnd(nItem);
+			}
 			m_oBcw.WriteItemEnd(nFont);
 		}
 		m_oBcw.WriteItemWithLengthEnd(nStart);
