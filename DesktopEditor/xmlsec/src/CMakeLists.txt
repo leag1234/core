@@ -13,7 +13,7 @@ add_library(ooxmlsignature SHARED)
 if(APPLE)
     set_target_properties(ooxmlsignature PROPERTIES
         FRAMEWORK TRUE
-        MACOSX_FRAMEWORK_IDENTIFIER asc.euro-office.ooxmlsignature
+        MACOSX_FRAMEWORK_IDENTIFIER asc.elixiroffice.ooxmlsignature
         MACOSX_FRAMEWORK_BUNDLE_VERSION 1.0
         MACOSX_FRAMEWORK_SHORT_VERSION_STRING 1.0
     )

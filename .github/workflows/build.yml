@@ -145,14 +145,14 @@ jobs:
       uses: actions/checkout@v4
       continue-on-error: true
       with:
-        repository: Euro-Office/DocumentServer
+        repository: ElixirOffice/DocumentServer
         path: documentserver
         ref: ${{ github.head_ref || github.ref_name }}
     - name: Check out DocumentServer e2e (main)
       if: steps.docserver.outcome != 'success'
       uses: actions/checkout@v4
       with:
-        repository: Euro-Office/DocumentServer
+        repository: ElixirOffice/DocumentServer
         path: documentserver
         ref: main
 
@@ -162,7 +162,7 @@ jobs:
         node-version: 20
 
     - name: Pull nightly image
-      run: docker pull ghcr.io/euro-office/documentserver:nightly
+      run: docker pull ghcr.io/elixiroffice/documentserver:nightly
 
     - name: Build overlay image with fresh core binaries
       run: |
@@ -192,8 +192,8 @@ jobs:
             rm -rf /tmp/core
         EOF
         docker build \
-          --build-arg NIGHTLY_IMAGE=ghcr.io/euro-office/documentserver:nightly \
-          -t euro-office/documentserver:e2e-core \
+          --build-arg NIGHTLY_IMAGE=ghcr.io/elixiroffice/documentserver:nightly \
+          -t elixiroffice/documentserver:e2e-core \
           -f overlay.Dockerfile \
           build/package
 
@@ -208,9 +208,9 @@ jobs:
     - name: Run E2E tests
       working-directory: documentserver/e2e
       env:
-        E2E_IMAGE: euro-office/documentserver:e2e-core
+        E2E_IMAGE: elixiroffice/documentserver:e2e-core
         E2E_HOST_PORT: 8989
-        E2E_CONTAINER_NAME: euro-office-e2e-core
+        E2E_CONTAINER_NAME: elixiroffice-e2e-core
       run: npm test
 
     - name: Upload Playwright report

@@ -96,7 +96,7 @@ rm -f .gclient .gclient_entries
 rm -rf _bad_scm chromium.googlesource.com
 
 if [ ! -d "v8" ]; then
-    log "Cloning V8 8.9.45 (for Euro-Office)..."
+    log "Cloning V8 8.9.45 (for ElixirOffice)..."
     retry 3 git clone https://chromium.googlesource.com/v8/v8.git v8 \
       || abort_op "git clone v8 failed"
     cd v8

@@ -7,7 +7,7 @@ with Python 3 (standard library only):
 python3 OdfFile/Test/number_formats/reproduce.py OdfFile/Test/number_formats/currency.ods
 ```
 
-Open `currency.ods` in Euro-Office, save/download it as ODS, and reopen that
+Open `currency.ods` in ElixirOffice, save/download it as ODS, and reopen that
 download in LibreOffice. Cells B2, B3 and B6 should retain `€`, B4 should retain
 `$`, and B5 should remain without a currency symbol. B7 must stay a percentage
 and B8 a date: both are controls for the reserved IDs the currency allocator

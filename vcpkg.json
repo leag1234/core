@@ -1,5 +1,5 @@
 {
-  "name": "euro-office",
+  "name": "elixiroffice",
   "version": "1.0.0",
   "dependencies": [
     "hunspell"
