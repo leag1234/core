@@ -4339,6 +4339,12 @@ void BinaryDocumentTableWriter::WriteFldChar(OOX::Logic::CFldChar* pFldChar)
 		m_oBcw.m_oStream.WriteStringW3(*pFldChar->m_sPrivateData);
 		m_oBcw.WriteItemWithLengthEnd(nCurPos);
 	}
+	if (pFldChar->m_oFldLock.IsInit() && pFldChar->m_oFldLock->ToBool())
+	{
+		nCurPos = m_oBcw.WriteItemStart(c_oSer_FldSimpleType::FldLock);
+		m_oBcw.m_oStream.WriteBOOL(true);
+		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	}
 }
 void BinaryDocumentTableWriter::WriteFldSimple(OOX::Logic::CFldSimple* pFldSimple)
 {
@@ -4371,6 +4377,12 @@ void BinaryDocumentTableWriter::WriteFldSimpleContent(OOX::Logic::CFldSimple* pF
 	{
 		nCurPos = m_oBcw.WriteItemStart(c_oSer_FldSimpleType::PrivateData);
 		m_oBcw.m_oStream.WriteStringW3(*pFldSimple->m_sPrivateData);
+		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	}
+	if (pFldSimple->m_oFldLock.ToBool())
+	{
+		nCurPos = m_oBcw.WriteItemStart(c_oSer_FldSimpleType::FldLock);
+		m_oBcw.m_oStream.WriteBOOL(true);
 		m_oBcw.WriteItemWithLengthEnd(nCurPos);
 	}
 

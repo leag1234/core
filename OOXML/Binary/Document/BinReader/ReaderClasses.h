@@ -467,6 +467,7 @@ public:
 class CFldSimple{
 public:
     std::wstring sInstr;
+	bool bLock;
 	NSStringUtils::CStringBuilder writer;
 
 public:

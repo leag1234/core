@@ -5506,6 +5506,11 @@ int Binary_DocumentTableReader::ReadFldChar(BYTE type, long length, void* poResu
 	{
 		pFldChar->m_sPrivateData = m_oBufferedStream.GetString3(length);
 	}
+	else if (c_oSer_FldSimpleType::FldLock == type)
+	{
+		pFldChar->m_oFldLock.Init();
+		pFldChar->m_oFldLock->FromBool(m_oBufferedStream.GetBool());
+	}
 	else
 		res = c_oSerConstants::ReadUnknown;
 	return res;
@@ -5536,6 +5541,10 @@ int Binary_DocumentTableReader::ReadFldSimple(BYTE type, long length, void* poRe
 	{
 		std::wstring sVal = m_oBufferedStream.GetString3(length);
 		pFldSimple->writer.WriteString(L"<w:fldData xml:space=\"preserve\">" + sVal + L"</w:fldData>");
+	}
+	else if (c_oSer_FldSimpleType::FldLock == type)
+	{
+		pFldSimple->bLock = m_oBufferedStream.GetBool();
 	}
 	else
 		res = c_oSerConstants::ReadUnknown;

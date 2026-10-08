@@ -1327,7 +1327,7 @@ allowOverlap=\"1\">";
 		wr.WriteString(L"</w:hyperlink>");
 	}
 
-	CFldSimple::CFldSimple()
+	CFldSimple::CFldSimple() : bLock(false)
 	{
 	}
 	void CFldSimple::Write(NSStringUtils::CStringBuilder& wr)
@@ -1337,7 +1337,7 @@ allowOverlap=\"1\">";
 			std::wstring sCorrect_Instr = XmlUtils::EncodeXmlString(sInstr);
 			std::wstring sStart(L"<w:fldSimple w:instr=\"");
 			sStart += sCorrect_Instr;
-			sStart += L"\">";
+			sStart += bLock ? L"\" w:fldLock=\"1\">" : L"\">";
 			wr.WriteString(sStart);
 			wr.Write(writer);
 			wr.WriteString(L"</w:fldSimple>");

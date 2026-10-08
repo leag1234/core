@@ -1120,7 +1120,8 @@ extern int g_nCurFormatVersion;
 		Instr = 1,
 		FFData = 2,
 		CharType = 3,
-		PrivateData = 4
+		PrivateData = 4,
+		FldLock = 5
 	};}
 	namespace c_oSer_ColorThemeType{ enum c_oSer_ColorThemeType
 	{
