@@ -966,6 +966,28 @@ namespace NSBinPptxRW
 					m_oPresentation.sldIdLst[i].rid = m_oReader.m_pRels->WriteSlide(i + 1);
 				}
 
+				// the slides of a section are identified by their position in the editor format: the ids written above
+				if (m_oPresentation.sectionLst.IsInit())
+				{
+					for (size_t i = 0; i < m_oPresentation.sectionLst->arSectionLst.size(); ++i)
+					{
+						std::vector<PPTX::Logic::XmlId>& arIds = m_oPresentation.sectionLst->arSectionLst[i].arSldIdLst;
+						std::vector<PPTX::Logic::XmlId> valid;
+						for (size_t j = 0; j < arIds.size(); ++j)
+						{
+							if (false == arIds[j].id.IsInit())
+								continue;
+							int nPosition = -1;
+							try { nPosition = std::stoi(arIds[j].id.get()); } catch (...) {}
+							if (nPosition < 0 || nPosition >= nCountSlides)
+								continue;
+							arIds[j].id = std::to_wstring(256 + nPosition);
+							valid.push_back(arIds[j]);
+						}
+						arIds = valid;
+					}
+				}
+
 				m_oPresentation.notesMasterIdLst.clear();
 				if (bNotesMasterPresent)
 				{

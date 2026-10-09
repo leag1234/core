@@ -224,7 +224,36 @@ namespace PPTX
 		pWriter->WriteRecord2(5, sldSz);
 
 		pWriter->WriteRecord2(6, commentAuthors);
-		pWriter->WriteRecord2(7, sectionLst);
+		if (sectionLst.IsInit())
+		{
+			// the slides of a section are written as their positions in the list of slides: the editor
+			// does not keep the ids of the file, and the writer gives the slides the ids 256 + position
+			nsPresentation::SectionLst sections;
+			for (size_t i = 0; i < sectionLst->arSectionLst.size(); ++i)
+			{
+				const nsPresentation::Section& src = sectionLst->arSectionLst[i];
+				nsPresentation::Section dst;
+				dst.id = src.id;
+				dst.name = src.name;
+				for (size_t j = 0; j < src.arSldIdLst.size(); ++j)
+				{
+					if (false == src.arSldIdLst[j].id.IsInit())
+						continue;
+					for (size_t k = 0; k < sldIdLst.size(); ++k)
+					{
+						if (sldIdLst[k].id.IsInit() && sldIdLst[k].id.get() == src.arSldIdLst[j].id.get())
+						{
+							Logic::XmlId position(L"p14:sldId");
+							position.id = std::to_wstring(k);
+							dst.arSldIdLst.push_back(position);
+							break;
+						}
+					}
+				}
+				sections.arSectionLst.push_back(dst);
+			}
+			pWriter->WriteRecord1(7, sections);
+		}
 
 		if (m_pVbaProject.IsInit())
 		{
