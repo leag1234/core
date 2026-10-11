@@ -946,7 +946,7 @@ namespace SimpleTypes
 		}
 	}
 
-	CColorType::CColorType()
+	CColorType::CColorType() : m_eValue(colortypeNone)
 	{
 		SetRGB();
 
