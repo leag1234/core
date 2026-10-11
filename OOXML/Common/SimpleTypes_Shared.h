@@ -393,9 +393,7 @@ namespace SimpleTypes
 
 		std::wstring m_sValue;
 
-		unsigned char m_unR;
-		unsigned char m_unG;
-		unsigned char m_unB;
+		unsigned char m_unR = 0, m_unG = 0, m_unB = 0;
 	};
 
 	//--------------------------------------------------------------------------------
