@@ -354,6 +354,7 @@ void xlsx_drawing_context::set_ms_object(const std::wstring & path, const std::w
 }
 void xlsx_drawing_context::set_image(const std::wstring & path)
 {
+	if (path.empty()) return; // An empty ODF image has neither a source nor inline bytes.
 	int pos_replaicement = path.find(L"ObjectReplacements"); 
 	if (pos_replaicement >= 0)
 	{
