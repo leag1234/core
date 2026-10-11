@@ -138,6 +138,7 @@ public:
 		styles_context_			= NULL;
 		current_series_count_	= 0;
 		local_table_reset_ref_	= false;
+		local_table_cache_required_ = false;
 
 		if (odf_context_->type == SpreadsheetDocument)
 		{
@@ -184,6 +185,7 @@ public:
 	
 	std::vector<odf_cash_state>			cash_;
 	bool								local_table_enabled_;
+	bool								local_table_cache_required_;
 	bool								local_table_reset_ref_;
 
 	std::vector<odf_chart_level_state>	current_level_;	//constantly changing list of inheritance levels
@@ -319,6 +321,7 @@ void odf_chart_context::Impl::clear_current()
 
 	current_series_count_	= 0;
 	local_table_reset_ref_	= false;
+	local_table_cache_required_ = false;
 	
 	if (odf_context_->type == SpreadsheetDocument)
 	{
@@ -1774,6 +1777,7 @@ void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstr
 	if (data_str.empty())					return;
 
 	std::wstring ref = impl_->data_cell_ranges_.back().ref;
+	if (ref.empty() && !categories && !label) impl_->local_table_cache_required_ = true;
 	
 	int count_cash_values	= 0;
 	bool by_row				= true;	
@@ -1844,9 +1848,9 @@ void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstr
 		ref1 = std::wstring(L"local-table.") + utils::getColAddress(start_col) + boost::lexical_cast<std::wstring>(start_row);
 		//
 		if (by_row)
-			ref2 = std::wstring(L"local-table.") + utils::getColAddress(start_col) + std::to_wstring(start_row + count_cash_values);
+			ref2 = std::wstring(L"local-table.") + utils::getColAddress(start_col) + std::to_wstring(start_row + count_cash_values - 1);
 		else
-			ref2 = std::wstring(L"local-table.") + utils::getColAddress(start_col + count_cash_values) + std::to_wstring(start_row);
+			ref2 = std::wstring(L"local-table.") + utils::getColAddress(start_col + count_cash_values - 1) + std::to_wstring(start_row);
 	
 		ref = ref1 + L":" + ref2;
 	}
@@ -1973,7 +1977,7 @@ int odf_chart_context::Impl::create_local_table_rows(int curr_row, ods_table_sta
 
 void odf_chart_context::Impl::create_local_table()
 {
-	if (local_table_enabled_ == false) return;
+	if (!local_table_enabled_ && !local_table_cache_required_) return;
 
 	std::vector<_cell_cash> cells_cash;
 	std::vector<_cell_cash> cells_cash_label;
@@ -2001,6 +2005,9 @@ void odf_chart_context::Impl::create_local_table()
 
 	for (size_t i = 0; i < cash_.size(); i++)
 	{
+		// Literal spreadsheet series need a cache table without remapping worksheet formulas.
+		if (!local_table_enabled_ && cash_[i].ref.find(L"local-table.") != 0) continue;
+
 		std::vector<std::wstring> refs;
 		boost::algorithm::split(refs,cash_[i].ref, boost::algorithm::is_any_of(L":"), boost::algorithm::token_compress_on);
 
