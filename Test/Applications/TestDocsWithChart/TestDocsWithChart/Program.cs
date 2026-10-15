@@ -61,7 +61,7 @@ namespace TestDocsWithChart
         }
         static void getFilesPivot()
         {
-            string sDirInput = @"\\files.example.invalid\allusers\Files\XLSX";
+            string sDirInput = @"\\192.0.2.10\allusers\Files\XLSX";
             string sDirOutput = @"D:\Files\Pivot";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
             for (var i = 0; i < allfiles.Length; ++i)
@@ -85,7 +85,7 @@ namespace TestDocsWithChart
         }
         static void getCustomXml()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\docx";
+            string sDirInput = @"\\192.0.2.10\files\Files\docx";
             string sDirOutput = @"D:\Files\CustomXml";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
             for (var i = 0; i < allfiles.Length; ++i)
@@ -109,7 +109,7 @@ namespace TestDocsWithChart
         }
         static void getKeywords()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\docx";
+            string sDirInput = @"\\192.0.2.10\files\Files\docx";
             string sDirOutput = @"D:\Files\keywords";
             string sFindText = "lastPrinted";
             string sFindText2 = "lastPrinted";
@@ -150,7 +150,7 @@ namespace TestDocsWithChart
         }
         static void getMath()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\docx";
+            string sDirInput = @"\\192.0.2.10\files\Files\docx";
             string sDirOutput = @"D:\Files\Math";
             string sFindText = "m:phant";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
@@ -181,7 +181,7 @@ namespace TestDocsWithChart
         }
         static void getMove()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\docx";
+            string sDirInput = @"\\192.0.2.10\files\Files\docx";
             string sDirOutput = @"D:\Files\Move";
             string sFindText = "w:moveFrom";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
@@ -212,7 +212,7 @@ namespace TestDocsWithChart
         }
         static void getExternal()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\xlsx";
+            string sDirInput = @"\\192.0.2.10\files\Files\xlsx";
             string sDirOutput = @"D:\Files\ExternalReferences";
             string sFindText = "externalBook";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
@@ -243,7 +243,7 @@ namespace TestDocsWithChart
         }
         static void getFullCalcOnLoad()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\xlsx";
+            string sDirInput = @"\\192.0.2.10\files\Files\xlsx";
             string sDirOutput = @"D:\Files\fullCalcOnLoad";
             string sFindText = "fullCalcOnLoad";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
@@ -275,7 +275,7 @@ namespace TestDocsWithChart
         }
         static void getGradientPos()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\xlsx";
+            string sDirInput = @"\\192.0.2.10\files\Files\xlsx";
             string sDirOutput = @"D:\Files\GradientPos";
             string sFindText = "stop position=\"";
             string sFindNoText1 = "0\"";
@@ -322,7 +322,7 @@ namespace TestDocsWithChart
         }
         static void getCAFiles()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\xlsx";
+            string sDirInput = @"\\192.0.2.10\files\Files\xlsx";
             string sDirOutput = @"D:\Files\ca";
             string sFindText = " ca=\"1\"";
             int nThreshold = 100;
@@ -369,7 +369,7 @@ namespace TestDocsWithChart
         }
         static void getSlicerFiles()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\xlsx";
+            string sDirInput = @"\\192.0.2.10\files\Files\xlsx";
             string sDirOutput1 = @"D:\Files\Slicers\table";
             string sFindText1 = "tableSlicerCache";
             string sDirOutput2 = @"D:\Files\Slicers\olap";
@@ -410,7 +410,7 @@ namespace TestDocsWithChart
         }
         static void getNamedSheetView()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\xlsx";
+            string sDirInput = @"\\192.0.2.10\files\Files\xlsx";
             string sDirOutput = @"D:\Files\NamedSheetView";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
             for (var i = 0; i < allfiles.Length; ++i)
@@ -459,7 +459,7 @@ namespace TestDocsWithChart
         static void getFilesConditional()
         {
             //string sFindText = "conditionalFormatting";
-            //string sDirInput = @"\\files.example.invalid\allusers\Files\XLSX";
+            //string sDirInput = @"\\192.0.2.10\allusers\Files\XLSX";
             //string sDirOutput = @"D:\Files\Conditional";
             string sFindText = "type=\"expression\"";
             string sDirInput = @"D:\Files\Conditional";
@@ -498,7 +498,7 @@ namespace TestDocsWithChart
         static void getFilesAlternateContent()
         {
             string sAlternateContent = ":Choice ";
-            string sDirInput = @"\\files.example.invalid\allusers\Files\PPTX";
+            string sDirInput = @"\\192.0.2.10\allusers\Files\PPTX";
             string sDirOutput = @"F:\Files\AlternateContent\pptx";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
             
@@ -546,7 +546,7 @@ namespace TestDocsWithChart
         static void getFilesOverride()
         {
             string sAlternateContent = "lvlOverride";
-            string sDirInput = @"\\files.example.invalid\files\Files\docx";
+            string sDirInput = @"\\192.0.2.10\files\Files\docx";
             string sDirOutput = @"D:\Files\override";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
             SortedList<long, string> listUncompressed = new SortedList<long, string>();
@@ -589,7 +589,7 @@ namespace TestDocsWithChart
         }
         static void getFiles()
         {
-            string sDirInput = @"\\files.example.invalid\allusers\Files\PPTX";
+            string sDirInput = @"\\192.0.2.10\allusers\Files\PPTX";
             string sDirOutput = @"F:\Files\embedchart";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
             for (var i = 0; i < allfiles.Length; ++i)
@@ -612,7 +612,7 @@ namespace TestDocsWithChart
         }
         static void getFiles2()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\docx";
+            string sDirInput = @"\\192.0.2.10\files\Files\docx";
             string sDirOutput = @"D:\Files\embed";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
             for (var i = 0; i < allfiles.Length; ++i)
@@ -667,7 +667,7 @@ namespace TestDocsWithChart
         }
         static void getFiles3()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\xlsx";
+            string sDirInput = @"\\192.0.2.10\files\Files\xlsx";
             string sDirOutput = @"D:\Files\height";
             string sHeight = " ht=\"";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
@@ -712,7 +712,7 @@ namespace TestDocsWithChart
         }
         static void getSize()
         {
-            string sDirInput = @"\\files.example.invalid\files\Files\pptx";
+            string sDirInput = @"\\192.0.2.10\files\Files\pptx";
             SortedList<long, string> listUncompressed = new SortedList<long,string>();
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
             for (var i = 0; i < allfiles.Length; ++i)
@@ -784,7 +784,7 @@ namespace TestDocsWithChart
         static void getLegacyDrawingHF()
         {
             string sAlternateContent = "<legacyDrawingHF ";
-            string sDirInput = @"\\files.example.invalid\files\Files\xlsx";
+            string sDirInput = @"\\192.0.2.10\files\Files\xlsx";
             string sDirOutput = @"D:\Files\legacyDrawingHF";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
 
@@ -822,7 +822,7 @@ namespace TestDocsWithChart
             string sAlternateContent = "v:shapetype ";
             string sAlternateContent2 = "<w:pict";
             string sAlternateContent3 = "<w:object";
-            string sDirInput = @"\\files.example.invalid\files\Files\docx";
+            string sDirInput = @"\\192.0.2.10\files\Files\docx";
             string sDirOutput = @"D:\Files\shapetype\docx";
             String[] allfiles = System.IO.Directory.GetFiles(sDirInput, "*.*", System.IO.SearchOption.AllDirectories);
 
