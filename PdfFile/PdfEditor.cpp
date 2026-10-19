@@ -2037,7 +2037,15 @@ bool CPdfEditor::EditPage(int _nPageIndex, bool bSet, bool bActualPos)
 		return false;
 	std::pair<int, int> pPageRef = std::make_pair(0, 0);
 	if (bActualPos)
+	{
 		pPageRef = pDoc->GetPageRef(_nPageIndex);
+		// Earlier moves change writer ordinals, not original page identities.
+		// Materialise inherited attributes from this page's ORIGINAL parent
+		// chain before inserting it under a different writer parent.
+		nPageIndex = pCatalog->findPage(pPageRef.first, pPageRef.second);
+		if (nPageIndex < 1)
+			return false;
+	}
 	else
 	{
 		Ref* pRef = pPDFDocument->getCatalog()->getPageRef(nPageIndex);

@@ -27,6 +27,7 @@
 #include "../../OOXML/PPTXFormat/DrawingConverter/ASCOfficePPTXFile.h"
 #include "../../../TxtFile/Source/PptxTxtConverter.h"
 #include "common.h"
+#include <memory>
 
 namespace NExtractTools
 {
@@ -77,7 +78,7 @@ namespace NExtractTools
 		else
 		{
 			// convert unzipped pptx to unzipped pptt
-			CPPTXFile *pptx_file = new CPPTXFile();
+			std::unique_ptr<CPPTXFile> pptx_file(new CPPTXFile());
 
 			if (pptx_file)
 			{
@@ -86,7 +87,6 @@ namespace NExtractTools
 				pptx_file->SetFontDir(params.getFontPath());
 				nRes = (S_OK == pptx_file->OpenFileToPPTY(sFrom, sTo)) ? nRes : AVS_FILEUTILS_ERROR_CONVERT;
 
-				delete pptx_file;
 			}
 		}
 

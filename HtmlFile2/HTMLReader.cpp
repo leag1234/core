@@ -1,4 +1,5 @@
 #include "HTMLReader.h"
+#include "../DesktopEditor/common/PackagePath.h"
 
 #include "../Common/Network/FileTransporter/include/FileTransporter.h"
 #include "../DesktopEditor/common/Path.h"
@@ -336,7 +337,7 @@ void CHTMLReader::Clear()
 	m_wsSrcDirectory .clear();
 	m_wsDstDirectory .clear();
 	m_wsBaseDirectory.clear();
-	m_wsCoreDirectory.clear();
+	// The package root is configuration and must survive per-conversion Clear().
 }
 
 void CHTMLReader::InitOOXMLTags(THTMLParameters* pParametrs)
@@ -588,6 +589,12 @@ void CHTMLReader::ReadStyleFromNetwork()
 	if(m_oLightReader.GetName() != L"href")
 		return;
 	std::wstring sRef = m_oLightReader.GetText();
+	if (!m_wsCoreDirectory.empty()) {
+		std::wstring resource;
+		if (NSPackagePath::Resolve(m_wsCoreDirectory, m_wsSrcDirectory, sRef, resource, true, true))
+			m_oCSSCalculator.AddStylesFromFile(resource);
+		return;
+	}
 	if(NSFile::GetFileExtention(sRef) != L"css")
 		return;
 	std::wstring sFName = NSFile::GetFileName(sRef);

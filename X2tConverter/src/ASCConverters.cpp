@@ -1755,6 +1755,8 @@ namespace NExtractTools
 
 		_CP_LOG << L"start conversion" << std::endl;
 		_UINT32 result = 0;
+		try
+		{
 		switch (conversion)
 		{
 		case TCD_NON_AUTO:
@@ -2410,6 +2412,12 @@ namespace NExtractTools
 		{
 			result = AVS_FILEUTILS_ERROR_CONVERT_PARAMS;
 		}break;
+		}
+
+		}
+		catch (const COfficeUtils::ArchiveExtractionError&)
+		{
+			result = AVS_FILEUTILS_ERROR_CONVERT;
 		}
 
 		// delete temp dir

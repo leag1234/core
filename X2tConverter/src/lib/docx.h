@@ -51,9 +51,8 @@ namespace NExtractTools
 					if (create_if_empty(sFrom, sTo, L"DOCY;v10;0;"))
 						return 0;
 				}
-				// zip currupt ... check for empty dir output  ?????
-				if (NSDirectory::GetFilesCount(sTempUnpackedDOCX, true) < 4)
-					return AVS_FILEUTILS_ERROR_CONVERT;
+				// A failed archive must never be converted from a partial extraction.
+				return AVS_FILEUTILS_ERROR_CONVERT;
 			}
 			else
 				return AVS_FILEUTILS_ERROR_CONVERT;

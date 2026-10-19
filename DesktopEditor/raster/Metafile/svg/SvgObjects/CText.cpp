@@ -40,7 +40,7 @@ namespace SVG
 
 	CTSpan::CTSpan(wchar_t wChar, const Point& oPosition, CRenderedObject* pParent, NSFonts::IFontManager* pFontManager)
 		: CRenderedObject(NSCSS::CNode(L"tspan", L"", L""), pParent), m_pFontManager(pFontManager),
-		  m_oX(oPosition.dX), m_oY(oPosition.dY)
+		  m_oX(oPosition.dX), m_oY(oPosition.dY), m_wsText(1, wChar)
 	{}
 
 	CTSpan::~CTSpan()
@@ -691,11 +691,6 @@ namespace SVG
 		if ("href" == sName || "xlink:href" == sName)
 		{
 			m_wsHref = oReader.GetText();
-
-			size_t unPosition = m_wsHref.find(L'#');
-
-			if (std::wstring::npos != unPosition)
-				m_wsHref.erase(0, unPosition + 1);
 		}
 		else
 			CText::SetAttribute(sName, oReader);

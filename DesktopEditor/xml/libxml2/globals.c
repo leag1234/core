@@ -50,20 +50,6 @@ void xmlInitGlobals(void)
         xmlThrDefMutex = xmlNewMutex();
 }
 
-/**
- * xmlCleanupGlobals:
- *
- * Additional cleanup for multi-threading
- */
-void xmlCleanupGlobals(void)
-{
-    if (xmlThrDefMutex != NULL) {
-	xmlFreeMutex(xmlThrDefMutex);
-	xmlThrDefMutex = NULL;
-    }
-    __xmlGlobalInitMutexDestroy();
-}
-
 /************************************************************************
  *									*
  *	All the user accessible global variables of the library		*
@@ -92,7 +78,7 @@ xmlStrdupFunc xmlMemStrdup = (xmlStrdupFunc) xmlMemoryStrdup;
  *
  * The variable holding the libxml free() implementation
  */
-xmlFreeFunc xmlFree = (xmlFreeFunc) free;
+xmlFreeFunc xmlFree = free;
 /**
  * xmlMalloc:
  * @size:  the size requested in bytes
@@ -101,18 +87,18 @@ xmlFreeFunc xmlFree = (xmlFreeFunc) free;
  *
  * Returns a pointer to the newly allocated block or NULL in case of error
  */
-xmlMallocFunc xmlMalloc = (xmlMallocFunc) malloc;
+xmlMallocFunc xmlMalloc = malloc;
 /**
  * xmlMallocAtomic:
  * @size:  the size requested in bytes
  *
  * The variable holding the libxml malloc() implementation for atomic
- * data (i.e. blocks not containings pointers), useful when using a
+ * data (i.e. blocks not containing pointers), useful when using a
  * garbage collecting allocator.
  *
  * Returns a pointer to the newly allocated block or NULL in case of error
  */
-xmlMallocFunc xmlMallocAtomic = (xmlMallocFunc) malloc;
+xmlMallocFunc xmlMallocAtomic = malloc;
 /**
  * xmlRealloc:
  * @mem: an already allocated block of memory
@@ -122,7 +108,19 @@ xmlMallocFunc xmlMallocAtomic = (xmlMallocFunc) malloc;
  *
  * Returns a pointer to the newly reallocated block or NULL in case of error
  */
-xmlReallocFunc xmlRealloc = (xmlReallocFunc) realloc;
+xmlReallocFunc xmlRealloc = realloc;
+/**
+ * xmlPosixStrdup
+ * @cur:  the input char *
+ *
+ * a strdup implementation with a type signature matching POSIX
+ *
+ * Returns a new xmlChar * or NULL
+ */
+static char *
+xmlPosixStrdup(const char *cur) {
+    return((char*) xmlCharStrdup(cur));
+}
 /**
  * xmlMemStrdup:
  * @str: a zero terminated string
@@ -131,7 +129,7 @@ xmlReallocFunc xmlRealloc = (xmlReallocFunc) realloc;
  *
  * Returns the copy of the string or NULL in case of error
  */
-xmlStrdupFunc xmlMemStrdup = (xmlStrdupFunc) xmlStrdup;
+xmlStrdupFunc xmlMemStrdup = xmlPosixStrdup;
 #endif /* DEBUG_MEMORY_LOCATION || DEBUG_MEMORY */
 
 #include <libxml/threads.h>
@@ -203,7 +201,7 @@ int oldXMLWDcompatibility = 0; /* DEPRECATED */
 /**
  * xmlParserDebugEntities:
  *
- * Global setting, asking the parser to print out debugging informations.
+ * Global setting, asking the parser to print out debugging information.
  * while handling entities.
  * Disabled by default
  */
@@ -253,7 +251,7 @@ static int xmlPedanticParserDefaultValueThrDef = 0;
  * Global setting, indicate that the parser should store the line number
  * in the content field of elements in the DOM tree.
  * Disabled by default since this may not be safe for old classes of
- * applicaton.
+ * application.
  */
 int xmlLineNumbersDefaultValue = 0;
 static int xmlLineNumbersDefaultValueThrDef = 0;
@@ -354,7 +352,7 @@ static const char *xmlTreeIndentStringThrDef = "  ";
  * xmlSaveNoEmptyTags:
  *
  * Global setting, asking the serializer to not output empty tags
- * as <empty/> but <empty></empty>. those two forms are undistinguishable
+ * as <empty/> but <empty></empty>. those two forms are indistinguishable
  * once parsed.
  * Disabled by default
  */
@@ -568,6 +566,22 @@ xmlInitializeGlobalState(xmlGlobalStatePtr gs)
     memset(&gs->xmlLastError, 0, sizeof(xmlError));
 
     xmlMutexUnlock(xmlThrDefMutex);
+}
+
+/**
+ * xmlCleanupGlobals:
+ *
+ * Additional cleanup for multi-threading
+ */
+void xmlCleanupGlobals(void)
+{
+    xmlResetError(&xmlLastError);
+
+    if (xmlThrDefMutex != NULL) {
+	xmlFreeMutex(xmlThrDefMutex);
+	xmlThrDefMutex = NULL;
+    }
+    __xmlGlobalInitMutexDestroy();
 }
 
 /**

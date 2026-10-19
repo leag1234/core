@@ -1,4 +1,5 @@
 #include "htmlfile2.h"
+#include "../DesktopEditor/common/PackagePath.h"
 
 #include <string>
 #include <cwctype>
@@ -1549,6 +1550,10 @@ bool GetStatusUsingExternalLocalFiles()
 
 bool CanUseThisPath(const std::wstring& wsPath, const std::wstring& wsSrcPath, const std::wstring& wsCorePath, bool bIsAllowExternalLocalFiles)
 {
+    if (!wsCorePath.empty()) {
+        std::wstring resource;
+        return NSPackagePath::Resolve(wsCorePath, wsSrcPath, wsPath, resource, true, true);
+    }
 	if (bIsAllowExternalLocalFiles)
 		return true;
 
@@ -2095,6 +2100,12 @@ public:
 						if(m_oLightReader.GetName() != L"href")
 							continue;
 						std::wstring sRef = m_oLightReader.GetText();
+						if (!m_sCore.empty()) {
+						    std::wstring packageStyle;
+						    if (NSPackagePath::Resolve(m_sCore, m_sSrc, sRef, packageStyle, true, true))
+						        m_oStylesCalculator.AddStylesFromFile(packageStyle);
+						    continue;
+						}
 						if(NSFile::GetFileExtention(sRef) != L"css")
 							continue;
 						std::wstring sFName = NSFile::GetFileName(sRef);
@@ -2138,6 +2149,12 @@ public:
 				if(m_oLightReader.GetName() != L"href")
 					continue;
 				std::wstring sRef = m_oLightReader.GetText();
+				if (!m_sCore.empty()) {
+				    std::wstring packageStyle;
+				    if (NSPackagePath::Resolve(m_sCore, m_sSrc, sRef, packageStyle, true, true))
+				        m_oStylesCalculator.AddStylesFromFile(packageStyle);
+				    continue;
+				}
 				if(NSFile::GetFileExtention(sRef) != L"css")
 					continue;
 				std::wstring sFName = NSFile::GetFileName(sRef);
@@ -4519,7 +4536,7 @@ private:
 		{
 			sSrcM = NSSystemPath::ShortenPath(sSrcM);
 
-			if (!CanUseThisPath(sSrcM, m_sSrc, m_sCore, bIsAllowExternalLocalFiles))
+			if (!CanUseThisPath(sSrcM, NSSystemPath::Combine(m_sSrc, m_sBase), m_sCore, bIsAllowExternalLocalFiles))
 			{
 				ImageAlternative(oXml, sSelectors, oTS, wsAlt, sSrcM, oImageData);
 				return true;

@@ -1,5 +1,5 @@
 /*
- * wincecompat.h : wince compatiblity header file 
+ * wincecompat.h : wince compatibility header file 
  *
  * See Copyright for the status of this software.
  *
@@ -40,12 +40,10 @@ char *getcwd( char *buffer, unsigned int size);
 char *strerror(int errnum);
 
 /*
-	Macro'ed inexistant funtion names
+	Macro'ed nonexistent function names
 
 */
-#if defined(_MSC_VER) && _MSC_VER < 1900
 #define snprintf _snprintf
-#endif
 #define vsnprintf(b,c,f,a) _vsnprintf(b,c,f,a)
 #define perror(_t) MessageBox(NULL, _T("_t"), _T("Error/Warning"), MB_OK)
 

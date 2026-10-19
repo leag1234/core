@@ -4222,6 +4222,55 @@ void DocxConverter::convert_table_style(OOX::CStyle *oox_style)
 
 	odt_context->styles_context()->table_styles().start_style(oox_name_id);
 //general
+	// Flatten the inherited direction/anchor subset before applying this style.
+	OOX::CStyles* styles = docx_document ? docx_document->m_oMain.styles
+		: (docx_flat_document ? docx_flat_document->m_pStyles.GetPointer() : NULL);
+	std::vector<OOX::CStyle*> ancestors;
+	OOX::CStyle* current_style = oox_style;
+	while (styles && current_style->m_oBasedOn.IsInit()
+		&& current_style->m_oBasedOn->m_sVal.IsInit())
+	{
+		auto found = styles->m_mapStyleNames.find(*current_style->m_oBasedOn->m_sVal);
+		if (found == styles->m_mapStyleNames.end() || found->second >= styles->m_arrStyle.size())
+			break;
+		OOX::CStyle* parent = styles->m_arrStyle[found->second];
+		if (!parent || !parent->m_oType.IsInit()
+			|| parent->m_oType->GetValue() != SimpleTypes::styletypeTable)
+			break;
+		bool cycle = parent == oox_style;
+		for (auto ancestor : ancestors)
+			cycle = cycle || ancestor == parent;
+		if (cycle)
+			break;
+		ancestors.push_back(parent);
+		current_style = parent;
+	}
+	OOX::Logic::CTableProperty inherited;
+	bool has_inherited = false;
+	for (auto it = ancestors.rbegin(); it != ancestors.rend(); ++it)
+	{
+		if (!(*it)->m_oTblPr.IsInit())
+			continue;
+		auto & pr = (*it)->m_oTblPr;
+		if (pr->m_oBidiVisual.IsInit())
+		{
+			inherited.m_oBidiVisual = pr->m_oBidiVisual;
+			has_inherited = true;
+		}
+		if (pr->m_oJc.IsInit())
+		{
+			inherited.m_oJc = pr->m_oJc;
+			has_inherited = true;
+		}
+		if (pr->m_oTblInd.IsInit())
+		{
+			inherited.m_oTblInd = pr->m_oTblInd;
+			has_inherited = true;
+		}
+	}
+	if (has_inherited)
+		convert(&inherited, odt_context->styles_context()->table_styles().get_table_properties());
+
 
 	if (oox_style->m_oTblPr.IsInit())
 	{
@@ -5073,6 +5122,51 @@ bool DocxConverter::convert(OOX::Logic::CTableProperty *oox_table_pr, odf_writer
 	if (oox_table_pr == NULL) return false;
 	if (table_properties == NULL) return false;
 
+	const auto old_mode = table_properties->content_.common_writing_mode_attlist_.style_writing_mode_;
+	const bool old_rtl = old_mode && (old_mode->get_type() == odf_types::writing_mode::RlTb
+		|| old_mode->get_type() == odf_types::writing_mode::Rl);
+	const auto old_alignment = table_properties->content_.table_align_;
+	int logical_alignment = SimpleTypes::jctableLeft;
+	if (old_alignment)
+	{
+		if (old_alignment->get_type() == odf_types::table_align::Center)
+			logical_alignment = SimpleTypes::jctableCenter;
+		else if (old_alignment->get_type() == odf_types::table_align::Right)
+			logical_alignment = old_rtl ? SimpleTypes::jctableLeft : SimpleTypes::jctableRight;
+		else if (old_alignment->get_type() == odf_types::table_align::Left)
+			logical_alignment = old_rtl ? SimpleTypes::jctableRight : SimpleTypes::jctableLeft;
+	}
+	const bool direct_alignment = oox_table_pr->m_oJc.IsInit() && oox_table_pr->m_oJc->m_oVal.IsInit();
+	if (direct_alignment)
+		logical_alignment = oox_table_pr->m_oJc->m_oVal->GetValue();
+
+	if (oox_table_pr->m_oBidiVisual.IsInit())
+	{
+		const bool rtl = oox_table_pr->m_oBidiVisual->m_oVal.ToBool();
+		table_properties->content_.common_writing_mode_attlist_.style_writing_mode_ =
+			odf_types::writing_mode(rtl ? odf_types::writing_mode::RlTb : odf_types::writing_mode::LrTb);
+	}
+	const auto mode = table_properties->content_.common_writing_mode_attlist_.style_writing_mode_;
+	const bool rtl = mode && (mode->get_type() == odf_types::writing_mode::RlTb || mode->get_type() == odf_types::writing_mode::Rl);
+	const bool leading_alignment = logical_alignment == SimpleTypes::jctableLeft
+		|| logical_alignment == SimpleTypes::jctableStart;
+	if (old_rtl != rtl && !oox_table_pr->m_oTblpPr.IsInit())
+	{
+		const auto left_margin = table_properties->content_.common_horizontal_margin_attlist_.fo_margin_left_;
+		table_properties->content_.common_horizontal_margin_attlist_.fo_margin_left_ =
+			table_properties->content_.common_horizontal_margin_attlist_.fo_margin_right_;
+		table_properties->content_.common_horizontal_margin_attlist_.fo_margin_right_ = left_margin;
+	}
+	if (!old_alignment || direct_alignment || old_rtl != rtl)
+	{
+		if (logical_alignment == SimpleTypes::jctableCenter)
+			table_properties->content_.table_align_ = odf_types::table_align(odf_types::table_align::Center);
+		else if (leading_alignment)
+			table_properties->content_.table_align_ = odf_types::table_align(rtl ? odf_types::table_align::Right : odf_types::table_align::Left);
+		else if (logical_alignment == SimpleTypes::jctableRight || logical_alignment == SimpleTypes::jctableEnd)
+			table_properties->content_.table_align_ = odf_types::table_align(rtl ? odf_types::table_align::Left : odf_types::table_align::Right);
+	}
+
 	if (oox_table_pr->m_oTblW.IsInit() && oox_table_pr->m_oTblW->m_oW.IsInit())
 	{
 		if (oox_table_pr->m_oTblW->m_oType.IsInit() && oox_table_pr->m_oTblW->m_oW.IsInit())
@@ -5100,16 +5194,21 @@ bool DocxConverter::convert(OOX::Logic::CTableProperty *oox_table_pr, odf_writer
 	{
 	}
 	
-	if (oox_table_pr->m_oTblInd.IsInit())//left indent - no wrapping
+	if (oox_table_pr->m_oTblInd.IsInit())
 	{
 		_CP_OPT(odf_types::length) length;
 
 		convert(oox_table_pr->m_oTblInd.GetPointer(), length);
         if (length)
         {
-            table_properties->content_.common_horizontal_margin_attlist_.fo_margin_left_ = odf_types::length(length->get_value_unit(odf_types::length::cm),odf_types::length::cm);
+            auto & margin = rtl ? table_properties->content_.common_horizontal_margin_attlist_.fo_margin_right_
+				: table_properties->content_.common_horizontal_margin_attlist_.fo_margin_left_;
+			margin = odf_types::length(length->get_value_unit(odf_types::length::cm), odf_types::length::cm);
         }
-		table_properties->content_.table_align_ = odf_types::table_align(odf_types::table_align::Left);
+	}
+	if (oox_table_pr->m_oTblInd.IsInit() && leading_alignment)
+	{
+		table_properties->content_.table_align_ = odf_types::table_align(rtl ? odf_types::table_align::Right : odf_types::table_align::Left);
 	}
 	else if (oox_table_pr->m_oTblpPr.IsInit()) //there are indentations and wrapping
 	{
@@ -5140,25 +5239,17 @@ bool DocxConverter::convert(OOX::Logic::CTableProperty *oox_table_pr, odf_writer
 				table_properties->content_.table_align_ = odf_types::table_align(odf_types::table_align::Center);
 		}
 	}
-	else if (oox_table_pr->m_oTblLayout.IsInit() && oox_table_pr->m_oTblLayout->m_oType.IsInit())
+
+	if (oox_table_pr->m_oTblpPr.IsInit() && direct_alignment)
 	{
-		table_properties->content_.common_horizontal_margin_attlist_.fo_margin_left_ = odf_types::length(0, odf_types::length::cm);
-		
-		table_properties->content_.table_align_ = odf_types::table_align(odf_types::table_align::Left);
+		if (logical_alignment == SimpleTypes::jctableCenter)
+			table_properties->content_.table_align_ = odf_types::table_align(odf_types::table_align::Center);
+		else if (leading_alignment)
+			table_properties->content_.table_align_ = odf_types::table_align(rtl ? odf_types::table_align::Right : odf_types::table_align::Left);
+		else if (logical_alignment == SimpleTypes::jctableRight || logical_alignment == SimpleTypes::jctableEnd)
+			table_properties->content_.table_align_ = odf_types::table_align(rtl ? odf_types::table_align::Left : odf_types::table_align::Right);
 	}
-	if (oox_table_pr->m_oJc.IsInit() && oox_table_pr->m_oJc->m_oVal.IsInit())
-	{
-		switch(oox_table_pr->m_oJc->m_oVal->GetValue())
-		{
-		case 0: table_properties->content_.table_align_ = odf_types::table_align(odf_types::table_align::Center); break;
-		case 2: 
-		case 3: table_properties->content_.table_align_ = odf_types::table_align(odf_types::table_align::Left); break;
-		case 1: 
-		case 4: table_properties->content_.table_align_ = odf_types::table_align(odf_types::table_align::Right); break;
-		default: break;
-		}
-	}
-    //nullable<ComplexTypes::Word::COnOff2 > m_oBidiVisual;
+
 	//nullable<ComplexTypes::Word::CShading                        > m_oShade;
     //nullable<ComplexTypes::Word::std::wstring_                        > m_oTblCaption;
 	//nullable<OOX::Logic::CTblCellMar                             > m_oTblCellMar;

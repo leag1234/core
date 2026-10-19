@@ -22,6 +22,7 @@
  * terms at http://creativecommons.org/licenses/by-sa/4.0/legalcode
  *
  */
+#include <memory>
 #include "DocxSerializer.h"
  
 #include "../BinWriter/BinaryWriterD.h"
@@ -198,7 +199,8 @@ bool BinDocxRW::CDocxSerializer::saveToFile(const std::wstring& sDstFileName, co
 	OOX::CPath pathMedia = pathMain.GetDirectory() + FILE_SEPARATOR_STR + _T("media");
 	NSDirectory::CreateDirectory(pathMedia.GetPath());
 
-	COfficeFontPicker* pFontPicker = new COfficeFontPicker();
+	std::unique_ptr<COfficeFontPicker> fontPickerOwner(new COfficeFontPicker());
+	COfficeFontPicker* pFontPicker = fontPickerOwner.get();
 	pFontPicker->Init(m_sFontDir);
     NSFonts::IFontManager* pFontManager = pFontPicker->get_FontManager();
 	DocWrapper::FontProcessor fp;
@@ -270,7 +272,6 @@ bool BinDocxRW::CDocxSerializer::saveToFile(const std::wstring& sDstFileName, co
 		RELEASEARRAYOBJECTS(pbBase64Buffer);
 	}
 	RELEASEOBJECT(m_pParamsWriter);
-	RELEASEOBJECT(pFontPicker);
 	return true;
 }
 bool BinDocxRW::CDocxSerializer::CreateDocxFolders(std::wstring strDirectory, std::wstring& sThemePath, std::wstring& sMediaPath, std::wstring& sEmbedPath)

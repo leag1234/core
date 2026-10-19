@@ -27,6 +27,7 @@
 
 #include "OfficeUtilsCommon.h"
 #include "../../Common/kernel_config.h"
+#include <stdexcept>
 
 #define ZLIB_ADDON_FLAG_ZERO                    0
 #define ZLIB_ADDON_FLAG_READ_ONLY               1
@@ -42,6 +43,12 @@ private:
 	OnProgressCallback* m_fCallback;
 public:
 	COfficeUtils(OnProgressCallback* bCallback = NULL);
+
+	class KERNEL_DECL ArchiveExtractionError : public std::runtime_error
+	{
+	public:
+		ArchiveExtractionError() : std::runtime_error("Invalid embedded archive") {}
+	};
 
 	HRESULT ExtractToDirectory		(const std::wstring& zipFile, const std::wstring& unzipDir, wchar_t* password, short extract_without_path);
 	HRESULT ExtractToDirectory		(BYTE* data, size_t len, const std::wstring& unzipDir, wchar_t* password, short extract_without_path);

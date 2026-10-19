@@ -2173,7 +2173,7 @@ int Binary_tblPrReader::Read_tblPr(BYTE type, long length, void* poResult)
             case align_Right:   pWiterTblPr->Props += L"<w:jc w:val=\"right\" />"; break;
             case align_Center:  pWiterTblPr->Props += L"<w:jc w:val=\"center\" />"; break;
             case align_Justify: pWiterTblPr->Props += L"<w:jc w:val=\"both\" />";  break;
-            case align_Left:    break;
+            case align_Left:    pWiterTblPr->Props += L"<w:jc w:val=\"left\" />"; break;
         }
 	}
 	else if ( c_oSerProp_tblPrType::TableInd == type )
@@ -2305,8 +2305,7 @@ int Binary_tblPrReader::Read_tblPr(BYTE type, long length, void* poResult)
 	else if (c_oSerProp_tblPrType::bidiVisual == type)
 	{
 		bool val = m_oBufferedStream.GetBool();
-		if (val) 
-			pWiterTblPr->Props += L"<w:bidiVisual/>";
+		pWiterTblPr->Props += val ? L"<w:bidiVisual/>" : L"<w:bidiVisual w:val=\"0\"/>";
 	}
 	else
 		res = c_oSerConstants::ReadUnknown;

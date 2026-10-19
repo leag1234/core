@@ -28,6 +28,7 @@
 
 #include <xml/simple_xml_writer.h>
 
+#include <cmath>
 #include "serialize_elements.h"
 #include "../../DataTypes/borderstyle.h"
 #include "odfcontext.h"
@@ -83,6 +84,14 @@ void table_format_properties::docx_convert(oox::docx_conversion_context & Contex
 {
     std::wostream & _tblPr = Context.get_styles_context().table_style();
 
+    const auto mode = common_writing_mode_attlist_.style_writing_mode_;
+    const bool rtl = mode && (mode->get_type() == writing_mode::RlTb || mode->get_type() == writing_mode::Rl);
+    if (rtl)
+        _tblPr << L"<w:bidiVisual/>";
+    else if (mode && (mode->get_type() == writing_mode::LrTb || mode->get_type() == writing_mode::Lr))
+        _tblPr << L"<w:bidiVisual w:val=\"0\"/>";
+
+
     if (style_rel_width_)
     {
         int w_w = (int)(0.5 + 50.0 * style_rel_width_->get_value());
@@ -112,24 +121,32 @@ void table_format_properties::docx_convert(oox::docx_conversion_context & Contex
     if (table_align_)
     {
         std::wstring w_val = L"left";
-        if (table_align_->get_type() == table_align::Margins || table_align_->get_type() == table_align::Left)
+        if (table_align_->get_type() == table_align::Margins)
 		{
-			if (common_horizontal_margin_attlist_.fo_margin_left_ && common_horizontal_margin_attlist_.fo_margin_right_)
+			if (common_horizontal_margin_attlist_.fo_margin_left_ && common_horizontal_margin_attlist_.fo_margin_right_
+                && common_horizontal_margin_attlist_.fo_margin_left_->get_type() == odf_types::length_or_percent::Length
+                && common_horizontal_margin_attlist_.fo_margin_right_->get_type() == odf_types::length_or_percent::Length)
 			{
 				if (common_horizontal_margin_attlist_.fo_margin_left_->get_length() == common_horizontal_margin_attlist_.fo_margin_right_->get_length())
 					w_val = L"center";
 			}
-			if (w_val != L"center" && common_horizontal_margin_attlist_.fo_margin_left_ )
-			{
-				odf_types::length indent = common_horizontal_margin_attlist_.fo_margin_left_->get_length();
-				
-				_tblPr << L"<w:tblInd w:w=\"" << indent.get_value_unit(odf_types::length::pt) * 20 << "\" w:type=\"dxa\"/>";
-			}
+
 		}
         else //if (table_align_->get_type() == table_align::Center)
 			w_val = boost::lexical_cast<std::wstring>(*table_align_);
 
+        if (rtl)
+        {
+            if (w_val == L"left") w_val = L"right";
+            else if (w_val == L"right") w_val = L"left";
+        }
         _tblPr << L"<w:jc w:val=\"" << w_val << "\"/>";
+        const auto & margin = rtl ? common_horizontal_margin_attlist_.fo_margin_right_ : common_horizontal_margin_attlist_.fo_margin_left_;
+        if (w_val == L"left" && margin && margin->get_type() == odf_types::length_or_percent::Length)
+        {
+            const odf_types::length indent = margin->get_length();
+            _tblPr << L"<w:tblInd w:w=\"" << std::lround(indent.get_value_unit(odf_types::length::pt) * 20) << "\" w:type=\"dxa\"/>";
+        }
     }
 
 	if (!style_use_optimal_column_width_)
@@ -145,13 +162,7 @@ void table_format_properties::docx_convert(oox::docx_conversion_context & Contex
         _tblPr << L"<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"" << w_fill << "\"/>";
     }
 
-    if (common_writing_mode_attlist_.style_writing_mode_)
-    {
-        bool rtl = common_writing_mode_attlist_.style_writing_mode_->get_type() == odf_types::writing_mode::RlTb;
 
-        if (rtl)
-            _tblPr << L"<w:bidiVisual/>";
-    }
 
 }
 

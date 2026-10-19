@@ -933,7 +933,7 @@ namespace XmlUtils
 	std::string NSXmlCanonicalizator::Execute(const std::string& sXml, int mode, bool withComments)
 	{
 #ifdef LIBXML_C14N_ENABLED
-		xmlDocPtr xmlDoc = xmlParseMemory((char*)sXml.c_str(), (int)sXml.length());
+		xmlDocPtr xmlDoc = xmlReadMemory((char*)sXml.c_str(), (int)sXml.length(), NULL, NULL, XML_PARSE_NOXXE | XML_PARSE_NONET);
 
 		CXmlBuffer bufferC14N;
 		xmlOutputBufferPtr _buffer = xmlOutputBufferCreateIO((xmlOutputWriteCallback)buffer_xmlBufferIOWrite, (xmlOutputCloseCallback)buffer_xmlBufferIOClose, &bufferC14N, NULL);

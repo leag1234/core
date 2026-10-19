@@ -1,4 +1,6 @@
 #include "OOXMLTags.h"
+#include "../../DesktopEditor/common/PackagePath.h"
+#include "../../DesktopEditor/xml/include/xmlutils.h"
 
 #include "../src/StringFinder.h"
 #include "../Table.h"
@@ -23,13 +25,46 @@ inline bool ElementInTable(const std::vector<NSCSS::CNode>& arSelectors);
 
 inline bool NotValidExtension(const std::wstring& sExtention);
 inline bool IsSVG(const std::wstring& wsExtention);
-bool ReadSVG(const std::wstring& wsSvg, NSFonts::IApplicationFonts* pFonts, const std::wstring& wsTempDir, const std::wstring& wsImagePath);
-bool ReadBase64(const std::wstring& wsSrc, const std::wstring& wsImagePath, NSFonts::IApplicationFonts* pFonts, const std::wstring& wsTempDir, std::wstring& wsExtention);
+bool ReadSVG(const std::wstring& wsSvg, NSFonts::IApplicationFonts* pFonts, const std::wstring& wsTempDir, const std::wstring& wsImagePath, bool bPackage = false);
+bool ReadBase64(const std::wstring& wsSrc, const std::wstring& wsImagePath, NSFonts::IApplicationFonts* pFonts, const std::wstring& wsTempDir, std::wstring& wsExtention, bool bPackage = false);
 bool GetStatusUsingExternalLocalFiles();
 bool CanUseThisPath(const std::wstring& wsPath, const std::wstring& wsSrcPath, const std::wstring& wsCorePath, bool bIsAllowExternalLocalFiles);
 
 bool CopyImage(std::wstring wsImageSrc, const std::wstring& wsSrc, const std::wstring& wsDst, bool bIsAllowExternalLocalFiles);
 bool UpdateImageData(const std::wstring& wsImagePath, TImageData& oImageData);
+
+
+// Package SVGs may embed raster bytes or refer to objects in the same SVG.
+// Never let the renderer reinterpret a nested URL relative to its temp folder.
+static bool PackageSvgHasOnlyEmbeddedResources(const std::wstring& svg)
+{
+    if (svg.find(L"<!DOCTYPE") != std::wstring::npos ||
+        svg.find(L"<!ENTITY") != std::wstring::npos)
+        return false;
+    XmlUtils::CXmlNode root;
+    if (!root.FromXmlString(svg))
+        return false;
+    std::vector<XmlUtils::CXmlNode> pending{root};
+    while (!pending.empty()) {
+        XmlUtils::CXmlNode node = pending.back();
+        pending.pop_back();
+        std::vector<std::wstring> names, values;
+        node.GetAllAttributes(names, values);
+        for (size_t i = 0; i < names.size(); ++i) {
+            if (XmlUtils::GetNameNoNS(names[i]) != L"href")
+                continue;
+            const std::wstring& href = values[i];
+            if (!href.empty() && href[0] != L'#' &&
+                href.compare(0, 22, L"data:image/png;base64,") != 0 &&
+                href.compare(0, 23, L"data:image/jpeg;base64,") != 0)
+                return false;
+        }
+        std::vector<XmlUtils::CXmlNode> children;
+        node.GetChilds(children);
+        pending.insert(pending.end(), children.begin(), children.end());
+    }
+    return true;
+}
 
 const static double HTML_FONTS[7] = {7.5, 10, 12, 13.5, 18, 24, 36};
 
@@ -213,7 +248,7 @@ bool CImage<COOXMLWriter>::Open(const std::vector<NSCSS::CNode>& arSelectors, co
 
 		const std::wstring wsImagePath{m_pWriter->GetMediaDir() + L'i' + std::to_wstring(m_arrImages.size()) + L".png"};
 
-		if (!ReadSVG(boost::any_cast<const std::wstring&>(oExtraData), m_pWriter->GetFonts(), m_pWriter->GetTempDir(), wsImagePath))
+		if (!ReadSVG(boost::any_cast<const std::wstring&>(oExtraData), m_pWriter->GetFonts(), m_pWriter->GetTempDir(), wsImagePath, !m_pWriter->GetCorePath().empty()))
 			return false;
 
 		TImageData oNewImageData;
@@ -276,13 +311,24 @@ bool CImage<COOXMLWriter>::Open(const std::vector<NSCSS::CNode>& arSelectors, co
 		return true;
 	}
 
+    std::wstring packageImage;
+    if (!m_pWriter->GetCorePath().empty() && wsSrc.compare(0, 5, L"data:") != 0) {
+        std::wstring base = m_pWriter->GetSrcPath();
+        const std::wstring packageBase = m_pWriter->GetBasePath();
+        if ((!packageBase.empty() && !NSPackagePath::Resolve(m_pWriter->GetCorePath(), base, packageBase, base, true, true)) ||
+            !NSPackagePath::Resolve(m_pWriter->GetCorePath(), base, wsSrc, packageImage, true, true)) {
+            m_pWriter->WriteAlternativeImage(wsAlt, wsSrc, oImageData);
+            return true;
+        }
+        wsSrc = packageImage;
+    }
 	bool bRes = false;
 	std::wstring wsExtention;
 	const std::wstring wsImagePath{m_pWriter->GetMediaDir() + L'i' + std::to_wstring(m_arrImages.size())};
 
 	// Assume the image is Base64-encoded
 	if (wsSrc.length() > 4 && wsSrc.substr(0, 4) == L"data" && wsSrc.find(L"/", 4) != std::wstring::npos)
-		bRes = ReadBase64(wsSrc, wsImagePath, m_pWriter->GetFonts(), m_pWriter->GetTempDir(), wsExtention);
+		bRes = ReadBase64(wsSrc, wsImagePath, m_pWriter->GetFonts(), m_pWriter->GetTempDir(), wsExtention, !m_pWriter->GetCorePath().empty());
 
 	const bool bIsAllowExternalLocalFiles = GetStatusUsingExternalLocalFiles();
 
@@ -353,6 +399,16 @@ bool CImage<COOXMLWriter>::Open(const std::vector<NSCSS::CNode>& arSelectors, co
 		}
 	}
 
+
+    if (!packageImage.empty() && IsSVG(wsExtention)) {
+        std::wstring svg;
+        if (!NSFile::CFileBinary::ReadAllTextUtf8(packageImage, svg) ||
+            !PackageSvgHasOnlyEmbeddedResources(svg)) {
+            m_pWriter->WriteAlternativeImage(wsAlt, wsSrc, oImageData);
+            return true;
+        }
+    }
+
 	int nImageId = -1;
 
 	if (!bRes)
@@ -377,6 +433,9 @@ bool CImage<COOXMLWriter>::Open(const std::vector<NSCSS::CNode>& arSelectors, co
 	{
 		const std::wstring wsDst = wsImagePath + L'.' + wsExtention;
 
+        if (!packageImage.empty()) {
+            bRes = CopyImage(packageImage, m_pWriter->GetSrcPath(), wsDst, true);
+        } else {
 		if (!m_pWriter->GetBasePath().empty())
 		{
 			if (!bRes)
@@ -390,6 +449,7 @@ bool CImage<COOXMLWriter>::Open(const std::vector<NSCSS::CNode>& arSelectors, co
 			bRes = CopyImage(m_pWriter->GetSrcPath() + L"/" + NSFile::GetFileName(wsSrc), m_pWriter->GetSrcPath(), wsDst, bIsAllowExternalLocalFiles);
 		if (!bRes)
 			bRes = CopyImage(wsSrc, m_pWriter->GetSrcPath(), wsDst, bIsAllowExternalLocalFiles);
+        }
 	}
 
 	if (!bRes)
@@ -825,8 +885,10 @@ inline bool IsSVG(const std::wstring& wsExtention)
 	return L"svg" == wsExtention || L"svg+xml" == wsExtention;
 }
 
-bool ReadSVG(const std::wstring& wsSvg, NSFonts::IApplicationFonts* pFonts, const std::wstring& wsTempDir, const std::wstring& wsImagePath)
+bool ReadSVG(const std::wstring& wsSvg, NSFonts::IApplicationFonts* pFonts, const std::wstring& wsTempDir, const std::wstring& wsImagePath, bool bPackage)
 {
+	if (bPackage && !PackageSvgHasOnlyEmbeddedResources(wsSvg))
+		return false;
 	MetaFile::IMetaFile* pSvgReader = MetaFile::Create(pFonts);
 	if (!pSvgReader->LoadFromString(wsSvg))
 	{
@@ -913,7 +975,7 @@ bool ReadSVG(const std::wstring& wsSvg, NSFonts::IApplicationFonts* pFonts, cons
 	return true;
 }
 
-bool ReadBase64(const std::wstring& wsSrc, const std::wstring& wsImagePath, NSFonts::IApplicationFonts* pFonts, const std::wstring& wsTempDir, std::wstring& wsExtention)
+bool ReadBase64(const std::wstring& wsSrc, const std::wstring& wsImagePath, NSFonts::IApplicationFonts* pFonts, const std::wstring& wsTempDir, std::wstring& wsExtention, bool bPackage)
 {
 	bool bRes = false;
 	size_t nBase = wsSrc.find(L"/", 4);
@@ -936,7 +998,7 @@ bool ReadBase64(const std::wstring& wsSrc, const std::wstring& wsImagePath, NSFo
 		return bRes;
 
 	int nOffset = nBase + 7;
-	int nSrcLen = (int)(wsSrc.length() - nBase + 1);
+	int nSrcLen = (int)(wsSrc.length() - nOffset);
 	int nDecodeLen = NSBase64::Base64DecodeGetRequiredLength(nSrcLen);
 	if (nDecodeLen != 0)
 	{
@@ -948,7 +1010,7 @@ bool ReadBase64(const std::wstring& wsSrc, const std::wstring& wsImagePath, NSFo
 		if (IsSVG(wsExtention))
 		{
 			std::wstring wsSvg(pImageData, pImageData + nDecodeLen);
-			bRes = ReadSVG(wsSvg, pFonts, wsTempDir, wsImagePath);
+			bRes = ReadSVG(wsSvg, pFonts, wsTempDir, wsImagePath, bPackage);
 			wsExtention = L"png";
 		}
 		else
@@ -977,6 +1039,10 @@ bool GetStatusUsingExternalLocalFiles()
 
 bool CanUseThisPath(const std::wstring& wsPath, const std::wstring& wsSrcPath, const std::wstring& wsCorePath, bool bIsAllowExternalLocalFiles)
 {
+    if (!wsCorePath.empty()) {
+        std::wstring resource;
+        return NSPackagePath::Resolve(wsCorePath, wsSrcPath, wsPath, resource, true, true);
+    }
 	if (bIsAllowExternalLocalFiles)
 		return true;
 
@@ -1004,7 +1070,7 @@ bool CopyImage(std::wstring wsImageSrc, const std::wstring& wsSrc, const std::ws
 		bAllow = wsImageSrc.substr(0, wsStartSrc.length()) == wsStartSrc;
 	}
 	if (bAllow)
-		bRes = NSFile::CFileBinary::Copy(wsSrc, wsDst);
+		bRes = NSFile::CFileBinary::Copy(wsImageSrc, wsDst);
 
 	return bRes;
 }

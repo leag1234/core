@@ -24,7 +24,7 @@
  */
 #include "Unit.h"
 #include <cwchar>
-
+#include "./Rand.h"
 
 double Cm_To_Mm     (const double &dValue)
 {
@@ -746,21 +746,9 @@ namespace XmlUtils
 		return sstream.str();
 	}
 
-	int Rand()
-	{
-		//rand returns integral value range between 0 and RAND_MAX.(RAND_MAX at least 32767.)
-		static bool init = false;   /* ensure different random header each time */
-		if (!init)
-		{
-			init = true;
-			srand((unsigned int) time(NULL));
-		}
-		return std::rand();
-	}
 	int GenerateInt()
 	{
-		//todo c++11 <random>
-		return ((Rand() & 0x7FFF) | ((Rand() & 0x7FFF) << 15) | ((Rand() & 0x3) << 30));
+		return static_cast<int>(RandUInt());
 	}
 
 	std::wstring GenerateGuid()
@@ -778,7 +766,15 @@ namespace XmlUtils
 		//		CoTaskMemFree(guidString);
 		//#else
 		std::wstringstream sstream;
-		sstream << boost::wformat(L"%04X%04X-%04X-%04X-%04X-%04X%04X%04X") % (Rand() & 0xff) % (Rand() & 0xff) % (Rand() & 0xff) % ((Rand() & 0x0fff) | 0x4000) % ((Rand() % 0x3fff) + 0x8000) %  (Rand() & 0xff) % (Rand() & 0xff) % (Rand() & 0xff);
+		sstream << boost::wformat(L"%04X%04X-%04X-%04X-%04X-%04X%04X%04X")
+			% (RandUInt() & 0xffff)
+			% (RandUInt() & 0xffff)
+			% (RandUInt() & 0xffff)
+			% ((RandUInt() & 0x0fff) | 0x4000)
+			% ((RandUInt() & 0x3fff) | 0x8000)
+			% (RandUInt() & 0xffff)
+			% (RandUInt() & 0xffff)
+			% (RandUInt() & 0xffff);
 		result = sstream.str();
 		//#endif
 		return result;

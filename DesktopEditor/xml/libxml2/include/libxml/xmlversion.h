@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Summary: compile-time version informations
  * Description: compile-time version informations for the XML library
  *
@@ -29,7 +29,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * the version string like "1.2.3"
  */
-#define LIBXML_DOTTED_VERSION "1.2.3"
+#define LIBXML_DOTTED_VERSION "2.9.14"
 
 /**
  * LIBXML_VERSION:
@@ -37,7 +37,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  * the version number: 1.2.3 value is 10203
  */
 #ifndef LIBXML_VERSION_NUMBER
-#define LIBXML_VERSION_NUMBER LIBXML_DOTTED_VERSION
+#define LIBXML_VERSION_NUMBER 20914
 #endif
 
 #define LIBXML_VERSION LIBXML_VERSION_NUMBER
@@ -47,14 +47,14 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * the version number string, 1.2.3 value is "10203"
  */
-#define LIBXML_VERSION_STRING "@LIBXML_VERSION_NUMBER@"
+#define LIBXML_VERSION_STRING "20914"
 
 /**
  * LIBXML_VERSION_EXTRA:
  *
  * extra version information, used to show a CVS compilation
  */
-#define LIBXML_VERSION_EXTRA "@LIBXML_VERSION_EXTRA@"
+#define LIBXML_VERSION_EXTRA ""
 
 /**
  * LIBXML_TEST_VERSION:
@@ -178,7 +178,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * Whether the FTP support is configured in
  */
-#if WITH_FTP
+#if WITH_FTP && !defined(BUILDING_WASM_MODULE) && !defined(EO_WASM) && !defined(__EMSCRIPTEN__)
 #define LIBXML_FTP_ENABLED
 #endif
 
@@ -187,7 +187,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * Whether the HTTP support is configured in
  */
-#if WITH_HTTP
+#if WITH_HTTP && !defined(BUILDING_WASM_MODULE) && !defined(EO_WASM) && !defined(__EMSCRIPTEN__)
 #define LIBXML_HTTP_ENABLED
 #endif
 

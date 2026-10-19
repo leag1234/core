@@ -82,15 +82,10 @@ bool CSvgFile::MarkObject(SVG::CObject *pObject)
 
 SVG::CObject *CSvgFile::GetMarkedObject(const std::wstring &wsId) const
 {
-	if (wsId.empty() || m_mMarkedObjects.empty())
+	// All paint, clip, mask, use and font references must name this SVG.
+	if (wsId.size() < 2 || wsId[0] != L'#' || m_mMarkedObjects.empty())
 		return NULL;
-
-	std::wstring wsNewId = wsId;
-
-	size_t unFound = wsNewId.find(L'#');
-
-	if (std::wstring::npos != unFound)
-		wsNewId.erase(0, unFound + 1);
+	const std::wstring wsNewId = wsId.substr(1);
 
 	MarkedMap::const_iterator oConstIter = m_mMarkedObjects.find(wsNewId);
 

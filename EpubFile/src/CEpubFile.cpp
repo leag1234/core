@@ -4,6 +4,7 @@
 #include "../../DesktopEditor/xml/include/xmlutils.h"
 #include "../../HtmlFile2/htmlfile2.h"
 #include "../../DesktopEditor/common/Path.h"
+#include "../../DesktopEditor/common/PackagePath.h"
 #include "../../DesktopEditor/common/ProcessEnv.h"
 #include "src/CBookInfo.h"
 
@@ -73,23 +74,18 @@ HRESULT CEpubFile::Convert(const std::wstring& sInputFile, const std::wstring& s
     if (oOfficeUtils.ExtractToDirectory(sInputFile, m_sTempDir.c_str(), password, 0) != S_OK)
         return S_FALSE;
 
-    std::wstring sFileContent;
-    std::wstring sContent;
-    if (!NSFile::CFileBinary::ReadAllTextUtf8(m_sTempDir + L"/META-INF/container.xml", sFileContent))
-        return S_FALSE;
-    size_t nContent = sFileContent.find(L"full-path");
-    if (nContent != std::wstring::npos)
-    {
-        nContent += 11;
-        sContent = sFileContent.substr(nContent, sFileContent.find_first_of(L"\"'", nContent) - nContent);
+    std::wstring rootfile = L"content.opf";
+    XmlUtils::CXmlLiteReader container;
+    if (!container.FromFile(m_sTempDir + L"/META-INF/container.xml")) return S_FALSE;
+    while (container.ReadNextNode()) {
+        if (container.GetNameNoNS() != L"rootfile") continue;
+        while (container.MoveToNextAttribute())
+            if (container.GetNameNoNS() == L"full-path") rootfile = container.GetText();
+        container.MoveToElement();
+        break;
     }
-
-    std::wstring sContentPath;
-
-    if (std::wstring::npos != sContent.find(L'/') || std::wstring::npos != sContent.find(L'\\'))
-        sContentPath = NSFile::GetDirectoryName(sContent);
-
-    sContent = m_sTempDir + (sContent.empty() ? L"/content.opf" : L'/' + sContent);
+    std::wstring sContent;
+    if (!NSPackagePath::Resolve(m_sTempDir, m_sTempDir, rootfile, sContent, true)) return S_FALSE;
 
     XmlUtils::CXmlLiteReader oXmlLiteReader;
     if (!oXmlLiteReader.FromFile(sContent))
@@ -110,8 +106,14 @@ HRESULT CEpubFile::Convert(const std::wstring& sInputFile, const std::wstring& s
             while (true)
             {
                 CBookItem oItem;
-                if (oItem.ReadItem(oXmlLiteReader, _nParentDepth))
+                if (oItem.ReadItem(oXmlLiteReader, _nParentDepth)) {
+                    std::wstring resource;
+                    // Optional remote or invalid resources are not part of the local package.
+                    // A spine reference to a skipped item is rejected below.
+                    if (!NSPackagePath::Resolve(m_sTempDir, NSFile::GetDirectoryName(sContent), oItem.GetRef(), resource, true))
+                        continue;
                     m_mapRefs.insert(std::make_pair(oItem.GetID(), oItem));
+                }
                 else
                     break;
             }
@@ -156,22 +158,21 @@ HRESULT CEpubFile::Convert(const std::wstring& sInputFile, const std::wstring& s
     std::wstring sDocxFileTempDir = m_sTempDir + L"/tmp";
     NSDirectory::CreateDirectory(sDocxFileTempDir);
     oFile.SetTempDirectory(sDocxFileTempDir);
-    oFile.SetCoreDirectory(NSFile::GetDirectoryName(sContent));
+    oFile.SetCoreDirectory(m_sTempDir);
 
     std::vector<std::wstring> arFiles;
 
     for (const CBookContentItem& oContent : m_arContents)
     {
-        std::wstring sFile = NSSystemPath::ShortenPath(m_mapRefs[oContent.m_sID].GetRef());
-        replace_all(sFile, L"%20", L" ");
-
-        if (sFile.length() > 3 && L'.' == sFile[0] && L'.' == sFile[1] && L'/' == sFile[2] &&
-            NSProcessEnv::IsPresent(NSProcessEnv::Converter::gc_allowPrivateIP) &&
-            !NSProcessEnv::GetBoolValue(NSProcessEnv::Converter::gc_allowPrivateIP))
-            continue;
-
-        arFiles.push_back(m_sTempDir + ((!sContentPath.empty()) ? (L"/" + sContentPath) : L"" ) + L"/" + sFile);
+        const auto item = m_mapRefs.find(oContent.m_sID);
+        if (item == m_mapRefs.end()) return S_FALSE;
+        std::wstring resource;
+        if (!NSPackagePath::Resolve(m_sTempDir, NSFile::GetDirectoryName(sContent), item->second.GetRef(), resource, true))
+            return S_FALSE;
+        arFiles.push_back(resource);
     }
+
+    if (arFiles.empty()) return S_FALSE;
 
 #ifdef _DEBUG
     std::wcout << L"---The conversion process from Epub to Docx...---" << std::endl;

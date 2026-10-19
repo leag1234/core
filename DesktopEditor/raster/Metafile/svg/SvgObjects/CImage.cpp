@@ -1,12 +1,9 @@
 #include "CImage.h"
 
 #include "../CSvgFile.h"
-#include "../../graphics/Image.h"
+#include "../../../../graphics/Image.h"
 #include "../../../BgraFrame.h"
-#include "../../../../common/Path.h"
-#include "../../../../common/ProcessEnv.h"
 #include "../../../../common/Base64.h"
-#include "../../../../common/File.h"
 
 namespace SVG
 {
@@ -32,10 +29,39 @@ namespace SVG
 
 	bool CImage::Draw(IRenderer *pRenderer, const CSvgFile *pFile, CommandeMode oMode, const TSvgStyles *pOtherStyles, const CRenderedObject* pContexObject) const
 	{
+		// SVG resources are embedded; never resolve href against a host directory.
+		const std::wstring pngPrefix = L"data:image/png;base64,";
+		const std::wstring jpegPrefix = L"data:image/jpeg;base64,";
+		size_t offset;
+		if (m_wsHref.compare(0, pngPrefix.size(), pngPrefix) == 0)
+			offset = pngPrefix.size();
+		else if (m_wsHref.compare(0, jpegPrefix.size(), jpegPrefix) == 0)
+			offset = jpegPrefix.size();
+		else
+			return false;
+		const std::wstring wsImageData = m_wsHref.substr(offset);
+		if (wsImageData.empty() || wsImageData.size() > 256 * 1024 * 1024)
+			return false;
+		int decodedSize = NSBase64::Base64DecodeGetRequiredLength(wsImageData.size());
+		if (decodedSize <= 0)
+			return false;
+		BYTE* pBuffer = new(std::nothrow) BYTE[decodedSize];
+		if (NULL == pBuffer)
+			return false;
+		if (!NSBase64::Base64Decode(wsImageData.c_str(), wsImageData.size(), pBuffer, &decodedSize) || decodedSize <= 0)
+		{
+			delete[] pBuffer;
+			return false;
+		}
+		DWORD ulSize = static_cast<DWORD>(decodedSize);
+
 		Aggplus::CMatrix oOldTransform;
 
-		if (m_wsHref.empty() || !StartPath(pRenderer, pFile, oOldTransform, oMode))
+		if (!StartPath(pRenderer, pFile, oOldTransform, oMode))
+		{
+			delete[] pBuffer;
 			return false;
+		}
 
 		TBounds oBounds = (NULL != m_pParent) ? m_pParent->GetBounds() : TBounds{0., 0., 0., 0.};
 
@@ -47,53 +73,6 @@ namespace SVG
 		double dWidth  = m_oRect.m_oWidth .ToDouble(NSCSS::Pixel, dParentWidth);
 		double dHeight = m_oRect.m_oHeight.ToDouble(NSCSS::Pixel, dParentHeight);
 
-		BYTE* pBuffer = NULL;
-		DWORD ulSize = 0;
-		size_t unStart = m_wsHref.find(L"data:image");
-
-		if (std::wstring::npos != unStart)
-		{
-			size_t unType = m_wsHref.find(L";base64", unStart);
-
-			if (std::wstring::npos == unType)
-				return false;
-
-			const std::wstring wsImageType = m_wsHref.substr(unStart + 11, unType - unStart - 11);
-
-			if (L"png" != wsImageType && L"jpeg" != wsImageType)
-				return false;
-	
-			std::wstring wsImageData = m_wsHref.substr(unType + 8, m_wsHref.length() - unType - 8);
-			ulSize = NSBase64::Base64DecodeGetRequiredLength(wsImageData.length());
-
-			pBuffer = new(std::nothrow) BYTE[ulSize];
-
-			if (NULL == pBuffer)
-				return false;
-
-			NSBase64::Base64Decode(wsImageData.c_str(), wsImageData.length(), pBuffer, &(int&)ulSize);
-		}
-		#ifndef METAFILE_DISABLE_FILESYSTEM
-		else
-		{
-			std::wstring wsFilePath = NSSystemPath::ShortenPath(m_wsHref);
-	
-			bool bIsAllowExternalLocalFiles = true;
-			if (NSProcessEnv::IsPresent(NSProcessEnv::Converter::gc_allowPrivateIP))
-				bIsAllowExternalLocalFiles = NSProcessEnv::GetBoolValue(NSProcessEnv::Converter::gc_allowPrivateIP);
-
-			if (!bIsAllowExternalLocalFiles && wsFilePath.length() >= 3 && L"../" == wsFilePath.substr(0, 3))
-				return false;
-	
-			wsFilePath = pFile->GetWorkingDirectory() + L'/' + wsFilePath;
-	
-			if (!NSFile::CFileBinary::Exists(wsFilePath) || !NSFile::CFileBinary::ReadAllBytes(wsFilePath, &pBuffer, ulSize))
-				return false;
-		}
-		#endif
-
-		if (NULL == pBuffer)
-			return false;
 
 		CBgraFrame oBgraFrame;
 		oBgraFrame.Decode(pBuffer, ulSize);

@@ -465,7 +465,7 @@ namespace NExtractTools
 			{
 				return ooxmlm_dir2ooxml_dir(sFrom, sTo, params, convertParams, type, documentType);
 			}
-			return 0;
+			return AVS_FILEUTILS_ERROR_CONVERT;
 		}
 
 		// convert any format to ooxml format

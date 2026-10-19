@@ -1,0 +1,14 @@
+{
+  "upstream_version": "2.9.14",
+  "upstream_release": "2022-05-02",
+  "archive_sha256": "60d74a257d1ccec0475e749cba2f21559e48139efba6ff28224357c7c798dfee",
+  "archive_url": "https://download.gnome.org/sources/libxml2/2.9/libxml2-2.9.14.tar.xz",
+  "project_contracts": [
+    "NOXXE rejects external entities, including fresh subparsers; only explicit root file entry points temporarily mask the option",
+    "release default generic-error suppression",
+    "Wasm internal callback signature and warnings-off defaults",
+    "project WITH feature matrix and actual2.9.14 version metadata",
+    "15M text/dictionary/lookup compatibility limits"
+  ],
+  "external_loader_boundary": "NOXXE is enforced by the default loader. An application-installed xmlSetExternalEntityLoader replaces that loader and is responsible for its own external-entity policy; the option is not a sandbox around custom loaders."
+}

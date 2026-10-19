@@ -180,7 +180,7 @@ namespace XmlUtils
                     pos_start = 0;
                 }
             }
-            reader = xmlReaderForMemory((char*)m_pStream + pos_start, m_lStreamLen - pos_start, NULL, NULL, 0);
+            reader = xmlReaderForMemory((char*)m_pStream + pos_start, m_lStreamLen - pos_start, NULL, NULL, XML_PARSE_NOXXE | XML_PARSE_NONET);
             return true;
         }
         inline bool FromString(const wchar_t* sXml)
@@ -192,7 +192,7 @@ namespace XmlUtils
             Clear();
 
             NSFile::CUtf8Converter::GetUtf8StringFromUnicode(sXml.c_str(), sXml.length(), m_pStream, m_lStreamLen, false);
-            reader = xmlReaderForMemory((char*)m_pStream, m_lStreamLen, NULL, NULL, 0);
+            reader = xmlReaderForMemory((char*)m_pStream, m_lStreamLen, NULL, NULL, XML_PARSE_NOXXE | XML_PARSE_NONET);
 
             return true;
         }
@@ -203,7 +203,7 @@ namespace XmlUtils
             m_lStreamLen = (LONG)sXml.length();
             m_pStream = new BYTE[m_lStreamLen];
             memcpy(m_pStream, sXml.c_str(), m_lStreamLen);
-            reader = xmlReaderForMemory((char*)m_pStream, m_lStreamLen, NULL, NULL, 0);
+            reader = xmlReaderForMemory((char*)m_pStream, m_lStreamLen, NULL, NULL, XML_PARSE_NOXXE | XML_PARSE_NONET);
 
             return true;
         }
@@ -212,7 +212,7 @@ namespace XmlUtils
             m_lStreamLen = size;
             m_pStream = new BYTE[m_lStreamLen];
             memcpy(m_pStream, sXml, m_lStreamLen);
-            reader = xmlReaderForMemory((char*)m_pStream, m_lStreamLen, NULL, NULL, 0);
+            reader = xmlReaderForMemory((char*)m_pStream, m_lStreamLen, NULL, NULL, XML_PARSE_NOXXE | XML_PARSE_NONET);
 
             return true;
         }
@@ -224,7 +224,7 @@ namespace XmlUtils
             if (NULL == m_pStream)
                 return false;
 
-            reader = xmlReaderForMemory((char*)m_pStream, m_lStreamLen, NULL, NULL, 0);
+            reader = xmlReaderForMemory((char*)m_pStream, m_lStreamLen, NULL, NULL, XML_PARSE_NOXXE | XML_PARSE_NONET);
             return true;
         }
 

@@ -228,7 +228,7 @@ void SHA1_HashMultipleBlocks_SHANI(word32 *state, const word32 *data, size_t len
     CRYPTOPP_ASSERT(length >= SHA1::BLOCKSIZE);
 
     __m128i ABCD, ABCD_SAVE, E0, E0_SAVE, E1;
-    __m128i MASK, MSG0, MSG1, MSG2, MSG3;
+    __m128i MASK, release review, release review, release review, release review;
 
     // Load initial values
     ABCD = _mm_loadu_si128(CONST_M128_CAST(state));
@@ -249,158 +249,158 @@ void SHA1_HashMultipleBlocks_SHANI(word32 *state, const word32 *data, size_t len
         E0_SAVE = E0;
 
         // Rounds 0-3
-        MSG0 = _mm_loadu_si128(CONST_M128_CAST(data+0));
-        MSG0 = _mm_shuffle_epi8(MSG0, MASK);
-        E0 = _mm_add_epi32(E0, MSG0);
+        release review = _mm_loadu_si128(CONST_M128_CAST(data+0));
+        release review = _mm_shuffle_epi8(release review, MASK);
+        E0 = _mm_add_epi32(E0, release review);
         E1 = ABCD;
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 0);
 
         // Rounds 4-7
-        MSG1 = _mm_loadu_si128(CONST_M128_CAST(data+4));
-        MSG1 = _mm_shuffle_epi8(MSG1, MASK);
-        E1 = _mm_sha1nexte_epu32(E1, MSG1);
+        release review = _mm_loadu_si128(CONST_M128_CAST(data+4));
+        release review = _mm_shuffle_epi8(release review, MASK);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 0);
-        MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
+        release review = _mm_sha1msg1_epu32(release review, release review);
 
         // Rounds 8-11
-        MSG2 = _mm_loadu_si128(CONST_M128_CAST(data+8));
-        MSG2 = _mm_shuffle_epi8(MSG2, MASK);
-        E0 = _mm_sha1nexte_epu32(E0, MSG2);
+        release review = _mm_loadu_si128(CONST_M128_CAST(data+8));
+        release review = _mm_shuffle_epi8(release review, MASK);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 0);
-        MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
-        MSG0 = _mm_xor_si128(MSG0, MSG2);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 12-15
-        MSG3 = _mm_loadu_si128(CONST_M128_CAST(data+12));
-        MSG3 = _mm_shuffle_epi8(MSG3, MASK);
-        E1 = _mm_sha1nexte_epu32(E1, MSG3);
+        release review = _mm_loadu_si128(CONST_M128_CAST(data+12));
+        release review = _mm_shuffle_epi8(release review, MASK);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
-        MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 0);
-        MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
-        MSG1 = _mm_xor_si128(MSG1, MSG3);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 16-19
-        E0 = _mm_sha1nexte_epu32(E0, MSG0);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
-        MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 0);
-        MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
-        MSG2 = _mm_xor_si128(MSG2, MSG0);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 20-23
-        E1 = _mm_sha1nexte_epu32(E1, MSG1);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
-        MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 1);
-        MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
-        MSG3 = _mm_xor_si128(MSG3, MSG1);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 24-27
-        E0 = _mm_sha1nexte_epu32(E0, MSG2);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
-        MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 1);
-        MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
-        MSG0 = _mm_xor_si128(MSG0, MSG2);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 28-31
-        E1 = _mm_sha1nexte_epu32(E1, MSG3);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
-        MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 1);
-        MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
-        MSG1 = _mm_xor_si128(MSG1, MSG3);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 32-35
-        E0 = _mm_sha1nexte_epu32(E0, MSG0);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
-        MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 1);
-        MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
-        MSG2 = _mm_xor_si128(MSG2, MSG0);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 36-39
-        E1 = _mm_sha1nexte_epu32(E1, MSG1);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
-        MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 1);
-        MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
-        MSG3 = _mm_xor_si128(MSG3, MSG1);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 40-43
-        E0 = _mm_sha1nexte_epu32(E0, MSG2);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
-        MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 2);
-        MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
-        MSG0 = _mm_xor_si128(MSG0, MSG2);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 44-47
-        E1 = _mm_sha1nexte_epu32(E1, MSG3);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
-        MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 2);
-        MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
-        MSG1 = _mm_xor_si128(MSG1, MSG3);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 48-51
-        E0 = _mm_sha1nexte_epu32(E0, MSG0);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
-        MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 2);
-        MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
-        MSG2 = _mm_xor_si128(MSG2, MSG0);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 52-55
-        E1 = _mm_sha1nexte_epu32(E1, MSG1);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
-        MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 2);
-        MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
-        MSG3 = _mm_xor_si128(MSG3, MSG1);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 56-59
-        E0 = _mm_sha1nexte_epu32(E0, MSG2);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
-        MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 2);
-        MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
-        MSG0 = _mm_xor_si128(MSG0, MSG2);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 60-63
-        E1 = _mm_sha1nexte_epu32(E1, MSG3);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
-        MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 3);
-        MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
-        MSG1 = _mm_xor_si128(MSG1, MSG3);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 64-67
-        E0 = _mm_sha1nexte_epu32(E0, MSG0);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
-        MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 3);
-        MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
-        MSG2 = _mm_xor_si128(MSG2, MSG0);
+        release review = _mm_sha1msg1_epu32(release review, release review);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 68-71
-        E1 = _mm_sha1nexte_epu32(E1, MSG1);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
-        MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 3);
-        MSG3 = _mm_xor_si128(MSG3, MSG1);
+        release review = _mm_xor_si128(release review, release review);
 
         // Rounds 72-75
-        E0 = _mm_sha1nexte_epu32(E0, MSG2);
+        E0 = _mm_sha1nexte_epu32(E0, release review);
         E1 = ABCD;
-        MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
+        release review = _mm_sha1msg2_epu32(release review, release review);
         ABCD = _mm_sha1rnds4_epu32(ABCD, E0, 3);
 
         // Rounds 76-79
-        E1 = _mm_sha1nexte_epu32(E1, MSG3);
+        E1 = _mm_sha1nexte_epu32(E1, release review);
         E0 = ABCD;
         ABCD = _mm_sha1rnds4_epu32(ABCD, E1, 3);
 
@@ -642,7 +642,7 @@ void SHA1_HashMultipleBlocks_ARMV8(word32 *state, const word32 *data, size_t len
 
     uint32x4_t C0, C1, C2, C3;
     uint32x4_t ABCD, ABCD_SAVED;
-    uint32x4_t MSG0, MSG1, MSG2, MSG3;
+    uint32x4_t release review, release review, release review, release review;
     uint32x4_t TMP0, TMP1;
     uint32_t   E0, E0_SAVED, E1;
 
@@ -661,145 +661,145 @@ void SHA1_HashMultipleBlocks_ARMV8(word32 *state, const word32 *data, size_t len
         ABCD_SAVED = ABCD;
         E0_SAVED = E0;
 
-        MSG0 = vld1q_u32(data +  0);
-        MSG1 = vld1q_u32(data +  4);
-        MSG2 = vld1q_u32(data +  8);
-        MSG3 = vld1q_u32(data + 12);
+        release review = vld1q_u32(data +  0);
+        release review = vld1q_u32(data +  4);
+        release review = vld1q_u32(data +  8);
+        release review = vld1q_u32(data + 12);
 
         if (order == BIG_ENDIAN_ORDER)  // Data arrangement
         {
-            MSG0 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG0)));
-            MSG1 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG1)));
-            MSG2 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG2)));
-            MSG3 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG3)));
+            release review = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(release review)));
+            release review = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(release review)));
+            release review = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(release review)));
+            release review = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(release review)));
         }
 
-        TMP0 = vaddq_u32(MSG0, C0);
-        TMP1 = vaddq_u32(MSG1, C0);
+        TMP0 = vaddq_u32(release review, C0);
+        TMP1 = vaddq_u32(release review, C0);
 
         // Rounds 0-3
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1cq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG2, C0);
-        MSG0 = vsha1su0q_u32(MSG0, MSG1, MSG2);
+        TMP0 = vaddq_u32(release review, C0);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 4-7
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1cq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG3, C0);
-        MSG0 = vsha1su1q_u32(MSG0, MSG3);
-        MSG1 = vsha1su0q_u32(MSG1, MSG2, MSG3);
+        TMP1 = vaddq_u32(release review, C0);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 8-11
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1cq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG0, C0);
-        MSG1 = vsha1su1q_u32(MSG1, MSG0);
-        MSG2 = vsha1su0q_u32(MSG2, MSG3, MSG0);
+        TMP0 = vaddq_u32(release review, C0);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 12-15
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1cq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG1, C1);
-        MSG2 = vsha1su1q_u32(MSG2, MSG1);
-        MSG3 = vsha1su0q_u32(MSG3, MSG0, MSG1);
+        TMP1 = vaddq_u32(release review, C1);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 16-19
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1cq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG2, C1);
-        MSG3 = vsha1su1q_u32(MSG3, MSG2);
-        MSG0 = vsha1su0q_u32(MSG0, MSG1, MSG2);
+        TMP0 = vaddq_u32(release review, C1);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 20-23
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1pq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG3, C1);
-        MSG0 = vsha1su1q_u32(MSG0, MSG3);
-        MSG1 = vsha1su0q_u32(MSG1, MSG2, MSG3);
+        TMP1 = vaddq_u32(release review, C1);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 24-27
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1pq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG0, C1);
-        MSG1 = vsha1su1q_u32(MSG1, MSG0);
-        MSG2 = vsha1su0q_u32(MSG2, MSG3, MSG0);
+        TMP0 = vaddq_u32(release review, C1);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 28-31
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1pq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG1, C1);
-        MSG2 = vsha1su1q_u32(MSG2, MSG1);
-        MSG3 = vsha1su0q_u32(MSG3, MSG0, MSG1);
+        TMP1 = vaddq_u32(release review, C1);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 32-35
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1pq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG2, C2);
-        MSG3 = vsha1su1q_u32(MSG3, MSG2);
-        MSG0 = vsha1su0q_u32(MSG0, MSG1, MSG2);
+        TMP0 = vaddq_u32(release review, C2);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 36-39
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1pq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG3, C2);
-        MSG0 = vsha1su1q_u32(MSG0, MSG3);
-        MSG1 = vsha1su0q_u32(MSG1, MSG2, MSG3);
+        TMP1 = vaddq_u32(release review, C2);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 40-43
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1mq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG0, C2);
-        MSG1 = vsha1su1q_u32(MSG1, MSG0);
-        MSG2 = vsha1su0q_u32(MSG2, MSG3, MSG0);
+        TMP0 = vaddq_u32(release review, C2);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 44-47
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1mq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG1, C2);
-        MSG2 = vsha1su1q_u32(MSG2, MSG1);
-        MSG3 = vsha1su0q_u32(MSG3, MSG0, MSG1);
+        TMP1 = vaddq_u32(release review, C2);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 48-51
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1mq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG2, C2);
-        MSG3 = vsha1su1q_u32(MSG3, MSG2);
-        MSG0 = vsha1su0q_u32(MSG0, MSG1, MSG2);
+        TMP0 = vaddq_u32(release review, C2);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 52-55
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1mq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG3, C3);
-        MSG0 = vsha1su1q_u32(MSG0, MSG3);
-        MSG1 = vsha1su0q_u32(MSG1, MSG2, MSG3);
+        TMP1 = vaddq_u32(release review, C3);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 56-59
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1mq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG0, C3);
-        MSG1 = vsha1su1q_u32(MSG1, MSG0);
-        MSG2 = vsha1su0q_u32(MSG2, MSG3, MSG0);
+        TMP0 = vaddq_u32(release review, C3);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 60-63
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1pq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG1, C3);
-        MSG2 = vsha1su1q_u32(MSG2, MSG1);
-        MSG3 = vsha1su0q_u32(MSG3, MSG0, MSG1);
+        TMP1 = vaddq_u32(release review, C3);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 64-67
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1pq_u32(ABCD, E0, TMP0);
-        TMP0 = vaddq_u32(MSG2, C3);
-        MSG3 = vsha1su1q_u32(MSG3, MSG2);
-        MSG0 = vsha1su0q_u32(MSG0, MSG1, MSG2);
+        TMP0 = vaddq_u32(release review, C3);
+        release review = vsha1su1q_u32(release review, release review);
+        release review = vsha1su0q_u32(release review, release review, release review);
 
         // Rounds 68-71
         E0 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
         ABCD = vsha1pq_u32(ABCD, E1, TMP1);
-        TMP1 = vaddq_u32(MSG3, C3);
-        MSG0 = vsha1su1q_u32(MSG0, MSG3);
+        TMP1 = vaddq_u32(release review, C3);
+        release review = vsha1su1q_u32(release review, release review);
 
         // Rounds 72-75
         E1 = vsha1h_u32(vgetq_lane_u32(ABCD, 0));
@@ -830,7 +830,7 @@ void SHA256_HashMultipleBlocks_ARMV8(word32 *state, const word32 *data, size_t l
     CRYPTOPP_ASSERT(length >= SHA256::BLOCKSIZE);
 
     uint32x4_t STATE0, STATE1, ABEF_SAVE, CDGH_SAVE;
-    uint32x4_t MSG0, MSG1, MSG2, MSG3;
+    uint32x4_t release review, release review, release review, release review;
     uint32x4_t TMP0, TMP1, TMP2;
 
     // Load initial values
@@ -844,132 +844,132 @@ void SHA256_HashMultipleBlocks_ARMV8(word32 *state, const word32 *data, size_t l
         CDGH_SAVE = STATE1;
 
         // Load message
-        MSG0 = vld1q_u32(data +  0);
-        MSG1 = vld1q_u32(data +  4);
-        MSG2 = vld1q_u32(data +  8);
-        MSG3 = vld1q_u32(data + 12);
+        release review = vld1q_u32(data +  0);
+        release review = vld1q_u32(data +  4);
+        release review = vld1q_u32(data +  8);
+        release review = vld1q_u32(data + 12);
 
         if (order == BIG_ENDIAN_ORDER)  // Data arrangement
         {
-            MSG0 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG0)));
-            MSG1 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG1)));
-            MSG2 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG2)));
-            MSG3 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG3)));
+            release review = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(release review)));
+            release review = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(release review)));
+            release review = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(release review)));
+            release review = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(release review)));
         }
 
-        TMP0 = vaddq_u32(MSG0, vld1q_u32(&SHA256_K[0x00]));
+        TMP0 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x00]));
 
         // Rounds 0-3
-        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP1 = vaddq_u32(MSG1, vld1q_u32(&SHA256_K[0x04]));
+        TMP1 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x04]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
-        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 4-7
-        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP0 = vaddq_u32(MSG2, vld1q_u32(&SHA256_K[0x08]));
+        TMP0 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x08]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
-        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 8-11
-        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP1 = vaddq_u32(MSG3, vld1q_u32(&SHA256_K[0x0c]));
+        TMP1 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x0c]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
-        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 12-15
-        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP0 = vaddq_u32(MSG0, vld1q_u32(&SHA256_K[0x10]));
+        TMP0 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x10]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
-        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 16-19
-        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP1 = vaddq_u32(MSG1, vld1q_u32(&SHA256_K[0x14]));
+        TMP1 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x14]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
-        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 20-23
-        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP0 = vaddq_u32(MSG2, vld1q_u32(&SHA256_K[0x18]));
+        TMP0 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x18]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
-        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 24-27
-        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP1 = vaddq_u32(MSG3, vld1q_u32(&SHA256_K[0x1c]));
+        TMP1 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x1c]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
-        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 28-31
-        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP0 = vaddq_u32(MSG0, vld1q_u32(&SHA256_K[0x20]));
+        TMP0 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x20]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
-        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 32-35
-        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP1 = vaddq_u32(MSG1, vld1q_u32(&SHA256_K[0x24]));
+        TMP1 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x24]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
-        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 36-39
-        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP0 = vaddq_u32(MSG2, vld1q_u32(&SHA256_K[0x28]));
+        TMP0 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x28]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
-        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 40-43
-        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP1 = vaddq_u32(MSG3, vld1q_u32(&SHA256_K[0x2c]));
+        TMP1 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x2c]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
-        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 44-47
-        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        release review = vsha256su0q_u32(release review, release review);
         TMP2 = STATE0;
-        TMP0 = vaddq_u32(MSG0, vld1q_u32(&SHA256_K[0x30]));
+        TMP0 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x30]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
-        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+        release review = vsha256su1q_u32(release review, release review, release review);
 
         // Rounds 48-51
         TMP2 = STATE0;
-        TMP1 = vaddq_u32(MSG1, vld1q_u32(&SHA256_K[0x34]));
+        TMP1 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x34]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
 
         // Rounds 52-55
         TMP2 = STATE0;
-        TMP0 = vaddq_u32(MSG2, vld1q_u32(&SHA256_K[0x38]));
+        TMP0 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x38]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
 
         // Rounds 56-59
         TMP2 = STATE0;
-        TMP1 = vaddq_u32(MSG3, vld1q_u32(&SHA256_K[0x3c]));
+        TMP1 = vaddq_u32(release review, vld1q_u32(&SHA256_K[0x3c]));
         STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
         STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
 

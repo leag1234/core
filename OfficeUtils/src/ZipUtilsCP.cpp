@@ -27,9 +27,12 @@
 #include <algorithm>
 #include "../../DesktopEditor/common/Directory.h"
 #include "../../DesktopEditor/common/Path.h"
+#include "../../DesktopEditor/common/PackagePath.h"
+#include <new>
 
 #if !defined(_WIN32) && !defined (_WIN64)
 #include <unistd.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #endif
 
@@ -40,6 +43,39 @@ unzFile unzOpenHelp(const wchar_t* filename);
 
 namespace ZLibZipUtils
 {
+	// Fixed conversion budgets apply before any extraction or header-sized allocation.
+	static const unsigned long long MaxArchiveEntries = 50000;
+	static const unsigned long long MaxEntryBytes = 256ULL * 1024 * 1024;
+	static const unsigned long long MaxArchiveBytes = 1024ULL * 1024 * 1024;
+	static const unsigned long long MaxCompressionRatio = 1000;
+	static const unsigned long long CompressionRatioMinimum = 1024 * 1024;
+
+	static bool ValidateArchive(unzFile uf)
+	{
+		unz_global_info64 global;
+		if (!uf || unzGetGlobalInfo64(uf, &global) != UNZ_OK ||
+			global.number_entry == 0 || global.number_entry > MaxArchiveEntries ||
+			unzGoToFirstFile(uf) != UNZ_OK)
+			return false;
+		unsigned long long total = 0;
+		for (unsigned long long i = 0; i < global.number_entry; ++i)
+		{
+			unz_file_info64 info;
+			if (unzGetCurrentFileInfo64(uf, &info, NULL, 0, NULL, 0, NULL, 0) != UNZ_OK ||
+				info.uncompressed_size > MaxEntryBytes ||
+				info.uncompressed_size > MaxArchiveBytes - total)
+				return false;
+			if (info.uncompressed_size > CompressionRatioMinimum &&
+				info.compressed_size < (info.uncompressed_size +
+					MaxCompressionRatio - 1) / MaxCompressionRatio)
+				return false;
+			total += info.uncompressed_size;
+			if (i + 1 < global.number_entry && unzGoToNextFile(uf) != UNZ_OK)
+				return false;
+		}
+		return unzGoToFirstFile(uf) == UNZ_OK;
+	}
+
 	// internal class for C unzFile struct
 	class CunzFileWrapped
 	{
@@ -202,6 +238,7 @@ namespace ZLibZipUtils
 	static int do_extract_currentfile( unzFile uf, const wchar_t* unzip_dir, const int* popt_extract_without_path, int* popt_overwrite, const char* password, bool is_replace_slash = false );
 	static int do_extract( unzFile uf, const wchar_t* unzip_dir, int opt_extract_without_path, int opt_overwrite, const char* password, const OnProgressCallback* progress );
 
+	static bool get_file(unzFile uf, BYTE* arr, uInt array_size, const char* password);
 	static bool is_file_in_archive(unzFile uf, const wchar_t *filename);
 	static bool current_file_is_find(unzFile uf, const wchar_t *filename);
 	static bool get_file_in_archive(unzFile uf, const wchar_t *filePathInZip, BYTE** fileInBytes, ULONG& nFileSize);
@@ -230,6 +267,33 @@ namespace ZLibZipUtils
 		}
 	}
 
+	// Unsupported names can be skipped, but a path escape always aborts.
+	static int EntryPathDecision(std::wstring name)
+	{
+		std::replace(name.begin(), name.end(), L'\\', L'/');
+		if (name.empty() || name[0] == L'/' ||
+			(name.size() > 1 && name[1] == L':' && iswalpha(name[0])))
+			return -1;
+		int depth = 0;
+		bool unusual = name == L"." || name == L"./";
+		for (size_t at = 0; at <= name.size();)
+		{
+			size_t end = name.find(L'/', at);
+			if (end == std::wstring::npos) end = name.size();
+			const std::wstring part = name.substr(at, end - at);
+			if (part == L"..") { if (depth == 0) return -1; --depth; }
+			else if (!part.empty() && part != L".") ++depth;
+			for (wchar_t ch : part) if (ch < 32 || ch == 127) return -1;
+			if (part.find(L':') != std::wstring::npos) unusual = true;
+#if defined(_WIN32) || defined(_WIN64)
+			if (!NSPackagePath::WindowsComponent(part)) unusual = true;
+#endif
+			if (end == name.size()) break;
+			at = end + 1;
+		}
+		return unusual ? 1 : 0;
+	}
+
 	static int do_extract_currentfile( unzFile uf, const wchar_t* unzip_dir, const int* popt_extract_without_path, int* popt_overwrite, const char* password, bool is_replcace_slash )
 	{
 		char filename_inzipA[4096];
@@ -239,6 +303,11 @@ namespace ZLibZipUtils
 		err = unzGetCurrentFileInfo(uf,&file_info,filename_inzipA,sizeof(filename_inzipA),NULL,0,NULL,0);
 		if (err!=UNZ_OK)
 			return err;
+		if (!unzip_dir || file_info.size_filename == 0 || file_info.size_filename >= sizeof(filename_inzipA))
+			return UNZ_BADZIPFILE;
+		filename_inzipA[file_info.size_filename] = 0;
+		if (memchr(filename_inzipA, 0, file_info.size_filename))
+			return UNZ_BADZIPFILE;
 
 		std::wstring filenameW;
 		if (file_info.flag & 2048 /*11 bit*/)
@@ -258,6 +327,11 @@ namespace ZLibZipUtils
 
 #endif
 
+		const int pathDecision = EntryPathDecision(filenameW);
+		if (pathDecision < 0) return UNZ_BADZIPFILE;
+		if (pathDecision > 0)
+			return get_file(uf, NULL, 0, password) ? UNZ_OK : UNZ_BADZIPFILE;
+
 		std::wstring filenameW_withoutpath = L"";
 		std::wstring::size_type posSeparator = filenameW.find_last_of(FILE_SEPARATOR_STR);
 		if (posSeparator == std::wstring::npos)
@@ -265,14 +339,21 @@ namespace ZLibZipUtils
 		else if (posSeparator != (filenameW.length() - 1))
 			filenameW_withoutpath = filenameW.substr(posSeparator + 1);
 
-		std::wstring output             = std::wstring(unzip_dir) + FILE_SEPARATOR_STR + filenameW;
-		std::wstring output_withoutpath = std::wstring(unzip_dir) + FILE_SEPARATOR_STR + filenameW_withoutpath;
+		std::wstring output;
+		if (!NSPackagePath::Resolve(unzip_dir, unzip_dir, filenameW, output))
+			return UNZ_BADZIPFILE;
+		std::wstring output_withoutpath;
+		if (!filenameW_withoutpath.empty() &&
+			!NSPackagePath::Resolve(unzip_dir, unzip_dir, filenameW_withoutpath, output_withoutpath))
+			return UNZ_BADZIPFILE;
 
 		if (filenameW_withoutpath.empty())
 		{
+			if (!get_file(uf, NULL, 0, password)) return UNZ_BADZIPFILE;
 			if ((*popt_extract_without_path)==0)
 			{
-				NSDirectory::CreateDirectory(output);
+				if (!NSDirectory::Exists(output) && !NSDirectory::CreateDirectories(output))
+					return UNZ_ERRNO;
 			}
 		}
 		else
@@ -287,17 +368,6 @@ namespace ZLibZipUtils
 
 			err = unzOpenCurrentFilePassword(uf, password);
 
-			//-------------------------------------------------------------------------------------------------
-
-			if (unzip_dir)
-			{
-				const std::wstring wsFilePath{NSSystemPath::ShortenPath(filenameW)};
-
-				if (wsFilePath.size() > 3 && L'.' == wsFilePath[0] && L'.' == wsFilePath[1] && L'/' == wsFilePath[2])
-					return UNZ_INTERNALERROR;
-			}
-
-			//-------------------------------------------------------------------------------------------------
 			NSFile::CFileBinary oFile;
 			FILE *fout = NULL;
 
@@ -325,8 +395,11 @@ namespace ZLibZipUtils
 
 			if (buf == NULL)
 			{
+				unzCloseCurrentFile(uf);
+				if (fout != NULL) { oFile.CloseFile(); NSFile::CFileBinary::Remove(write_filename); }
 				return UNZ_INTERNALERROR;
 			}
+			if (fout == NULL && err == UNZ_OK) err = UNZ_ERRNO;
 
 			if (fout != NULL)
 			{
@@ -371,6 +444,11 @@ namespace ZLibZipUtils
 				unzCloseCurrentFile(uf); // don't lose the error
 
 			free(buf);
+			if (err != UNZ_OK && fout != NULL)
+			{
+				oFile.CloseFile();
+				NSFile::CFileBinary::Remove(write_filename);
+			}
 		}
 
 		return err;
@@ -393,12 +471,14 @@ namespace ZLibZipUtils
 		unzGoToFirstFile(uf);
 
 		err = unzGetGlobalInfo (uf,&gi);
+		if (err != UNZ_OK) return err;
 
 		for (i = 0; i < gi.number_entry; i++)
 		{
-			if (do_extract_currentfile(uf, unzip_dir, &opt_extract_without_path,
-									   &opt_overwrite,
-									   password, is_office) == UNZ_OK)
+			int entryError = do_extract_currentfile(uf, unzip_dir, &opt_extract_without_path,
+									   &opt_overwrite, password, is_office);
+			if (entryError != UNZ_OK) return entryError;
+			if (entryError == UNZ_OK)
 			{
 				number_extract++;
 			}
@@ -412,7 +492,7 @@ namespace ZLibZipUtils
 
 				if ( cancel != 0 )
 				{
-					return err;
+					return UNZ_ERRNO;
 				}
 			}
 
@@ -469,76 +549,84 @@ namespace ZLibZipUtils
 
 	/*========================================================================================================*/
 
+	static bool CurrentName(unzFile uf, std::wstring& name)
+	{
+		char bytes[4096];
+		unz_file_info info;
+		if (unzGetCurrentFileInfo(uf, &info, bytes, sizeof(bytes), NULL, 0, NULL, 0) != UNZ_OK ||
+			info.size_filename == 0 || info.size_filename >= sizeof(bytes) ||
+			memchr(bytes, 0, info.size_filename))
+			return false;
+		bytes[info.size_filename] = 0;
+		name = (info.flag & 2048) ?
+			NSFile::CUtf8Converter::GetUnicodeStringFromUTF8(reinterpret_cast<BYTE*>(bytes), info.size_filename) :
+			codepage_issue_fixFromOEM(bytes);
+		return !name.empty();
+	}
 	static bool current_file_is_find(unzFile uf, const wchar_t *filename)
 	{
-		char filename_inzip[256];
-		int err = UNZ_OK;
-
-		unz_file_info file_info;
-
-		err = unzGetCurrentFileInfo(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
-
-		std::wstring filenameW = codepage_issue_fixFromOEM(filename_inzip);
-
-		//TODO is there a need to reduce everything to the bottom???
-		if (wcscmp(filename, filenameW.c_str()) == 0)
-			return true;
-
-		return false;
+		std::wstring name;
+		return filename && CurrentName(uf, name) && name == filename;
 	}
 
 	/*========================================================================================================*/
 
-	static const std::wstring get_filename_from_unzfile(unzFile unzip_file_handle)
+	static const std::wstring get_filename_from_unzfile(unzFile uf)
 	{
-		char filename_inzip[256];
-		int err = UNZ_OK;
-
-		if (UNZ_OK == unzGetCurrentFileInfo(unzip_file_handle, NULL, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0))
-			return codepage_issue_fixFromOEM(filename_inzip);
-
-		return std::wstring(L"");
+		std::wstring name;
+		CurrentName(uf, name);
+		return name;
 	}
 
 	/*========================================================================================================*/
 
-	static bool get_file(unzFile unzip_file_handle, BYTE* arr, uInt array_size)
+	static bool get_file(unzFile uf, BYTE* arr, uInt array_size, const char* password = NULL)
 	{
-		if(UNZ_OK == unzOpenCurrentFile(unzip_file_handle))
-		{
-			int data_read_size = unzReadCurrentFile(unzip_file_handle, arr, array_size);
-
-			unzCloseCurrentFile(unzip_file_handle);
-			return data_read_size == array_size ? true : false;
-		}
-		return false;
-	}
-	/*========================================================================================================*/
-
-	static bool get_file_in_archive(unzFile unzip_file_handle, const wchar_t *filePathInZip, BYTE** fileInBytes, ULONG& nFileSize)
-	{
-		if(NULL == fileInBytes)
+		unz_file_info info;
+		if (unzGetCurrentFileInfo(uf, &info, NULL, 0, NULL, 0, NULL, 0) != UNZ_OK ||
+			info.uncompressed_size > MaxEntryBytes ||
+			unzOpenCurrentFilePassword(uf, password) != UNZ_OK)
 			return false;
-		(*fileInBytes) = NULL;
+		BYTE buffer[READBUFFERSIZE];
+		unsigned long long total = 0;
+		int count;
+		while ((count = unzReadCurrentFile(uf, buffer, sizeof(buffer))) > 0)
+		{
+			if (total + count > info.uncompressed_size)
+			{
+				unzCloseCurrentFile(uf);
+				return false;
+			}
+			if (arr && total < array_size)
+				memcpy(arr + static_cast<size_t>(total), buffer,
+					(std::min)(static_cast<unsigned long long>(count), array_size - total));
+			total += count;
+		}
+		const int closeResult = unzCloseCurrentFile(uf);
+		return count == 0 && total == info.uncompressed_size && closeResult == UNZ_OK;
+	}
+
+	/*========================================================================================================*/
+
+	static bool get_file_in_archive(unzFile uf, const wchar_t *filePathInZip, BYTE** fileInBytes, ULONG& nFileSize)
+	{
+		if (!fileInBytes) return false;
+		*fileInBytes = NULL;
+		if (!ValidateArchive(uf)) { nFileSize = 0; return false; }
 		do
 		{
-			if (current_file_is_find(unzip_file_handle, filePathInZip) == true)
-			{
-				unz_file_info file_info;
-				unzGetCurrentFileInfo(unzip_file_handle, &file_info, NULL, 0, NULL, 0, NULL, 0);
-
-				if (nFileSize > 0)
-					nFileSize = (std::min)(nFileSize, file_info.uncompressed_size);
-				else
-					nFileSize = file_info.uncompressed_size;
-
-				(*fileInBytes) = new BYTE[nFileSize];
-				get_file(unzip_file_handle, (*fileInBytes), nFileSize);
-				return true;
-			}
-			// else just skip the erroneous file
-		} while (UNZ_OK == unzGoToNextFile(unzip_file_handle));
-
+			if (!current_file_is_find(uf, filePathInZip)) continue;
+			unz_file_info info;
+			if (unzGetCurrentFileInfo(uf, &info, NULL, 0, NULL, 0, NULL, 0) != UNZ_OK)
+				break;
+			nFileSize = nFileSize ? (std::min)(nFileSize, info.uncompressed_size) : info.uncompressed_size;
+			BYTE* data = new(std::nothrow) BYTE[nFileSize ? nFileSize : 1];
+			if (!data) break;
+			if (!get_file(uf, data, nFileSize, NULL)) { delete[] data; break; }
+			*fileInBytes = data;
+			return true;
+		} while (unzGoToNextFile(uf) == UNZ_OK);
+		nFileSize = 0;
 		return false;
 	}
 
@@ -770,6 +858,68 @@ namespace ZLibZipUtils
 
 	/*========================================================================================================*/
 
+
+    // Validate existing descendants before the legacy recursive cleanup sees them.
+    // The extraction root remains private/stable; this does not address concurrent edits.
+    static bool ClearTreeHasNoLinks(const std::wstring& root)
+    {
+#if defined(_WIN32) || defined(_WIN64)
+        std::vector<std::wstring> directories(1, root);
+        while (!directories.empty())
+        {
+            std::wstring directory = directories.back();
+            directories.pop_back();
+            WIN32_FIND_DATAW item;
+            HANDLE search = FindFirstFileW((directory + L"/*").c_str(), &item);
+            if (search == INVALID_HANDLE_VALUE)
+            {
+                if (GetLastError() == ERROR_FILE_NOT_FOUND) continue;
+                return false;
+            }
+            bool valid = true;
+            do
+            {
+                std::wstring name(item.cFileName);
+                if (name == L"." || name == L"..") continue;
+                std::wstring path = directory + L"/" + name;
+                if (!NSPackagePath::NoLinks(root, path)) { valid = false; break; }
+                if (item.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                    directories.push_back(path);
+            } while (FindNextFileW(search, &item));
+            if (valid && GetLastError() != ERROR_NO_MORE_FILES) valid = false;
+            FindClose(search);
+            if (!valid) return false;
+        }
+#else
+        std::vector<std::string> directories(1, NSFile::CUtf8Converter::GetUtf8StringFromUnicode(root));
+        while (!directories.empty())
+        {
+            std::string directory = directories.back();
+            directories.pop_back();
+            DIR* stream = opendir(directory.c_str());
+            if (!stream) return false;
+            bool valid = true;
+            for (;;)
+            {
+                errno = 0;
+                struct dirent* item = readdir(stream);
+                if (!item) { if (errno) valid = false; break; }
+                std::string name(item->d_name);
+                if (name == "." || name == "..") continue;
+                std::string path = directory + "/" + name;
+                struct stat info;
+                if (lstat(path.c_str(), &info) != 0 || S_ISLNK(info.st_mode) ||
+                    (!S_ISDIR(info.st_mode) && (!S_ISREG(info.st_mode) || info.st_nlink > 1)))
+                { valid = false; break; }
+                if (S_ISDIR(info.st_mode)) directories.push_back(path);
+            }
+            if (closedir(stream) != 0) valid = false;
+            if (!valid) return false;
+        }
+#endif
+        return true;
+    }
+
 	bool ClearDirectory( const WCHAR* dir, bool delDir )
 	{
 		bool result = false;
@@ -841,12 +991,20 @@ namespace ZLibZipUtils
 
 		if ( uf != NULL && unzipDir != NULL )
 		{
+			if (!ValidateArchive(uf)) return UNZ_BADZIPFILE;
+			std::wstring root;
+			if (!NSPackagePath::Absolute(unzipDir, root) || !NSPackagePath::NoLinks(root, root))
+				return UNZ_BADZIPFILE;
 			if (NSDirectory::Exists(unzipDir))
 				err = 0;
 
 			if ( clearOutputDirectory )
 			{
+				if (!ClearTreeHasNoLinks(root)) return UNZ_BADZIPFILE;
 				ClearDirectory( unzipDir );
+				// ClearDirectory removes the root too; recreate it before validating entries.
+				if (!NSDirectory::CreateDirectory(root) || !NSPackagePath::NoLinks(root, root))
+					return UNZ_ERRNO;
 			}
 
 			if ( err == 0 )
@@ -951,27 +1109,36 @@ namespace ZLibZipUtils
 
 	bool ExtractFiles(const wchar_t* zip_file_path, const ExtractedFileCallback& callback, void* pParam)
 	{
-		unzFile unzip_file_handle = unzOpenHelp(zip_file_path);
-		if ( unzip_file_handle != NULL )
+		CunzFileWrapped wrapped;
+		wrapped.Open(zip_file_path);
+		unzFile uf = wrapped.Get();
+		if (!callback || !ValidateArchive(uf)) return false;
+		do
 		{
-			do
+			unz_file_info info;
+			if (unzGetCurrentFileInfo(uf, &info, NULL, 0, NULL, 0, NULL, 0) != UNZ_OK)
+				return false;
+			std::wstring name;
+			if (!CurrentName(uf, name)) return false;
+			const int decision = EntryPathDecision(name);
+			if (decision < 0) return false;
+			if (decision > 0)
 			{
-				unz_file_info file_info;
-				unzGetCurrentFileInfo(unzip_file_handle, &file_info, NULL, 0, NULL, 0, NULL, 0);
-
-				BYTE* pData = new BYTE[file_info.uncompressed_size];
-				if(file_info.uncompressed_size == 0 || get_file(unzip_file_handle, pData, file_info.uncompressed_size))
-				{
-					callback(get_filename_from_unzfile(unzip_file_handle), pData, file_info.uncompressed_size, pParam);
-				}
-				RELEASEARRAYOBJECTS(pData);
-				// else just skip the erroneous file
-			} while (UNZ_OK == unzGoToNextFile(unzip_file_handle));
-
-			unzClose( unzip_file_handle );
-			return true;
-		}
-		return false;
+				if (!get_file(uf, NULL, 0, NULL)) return false;
+				const int next = unzGoToNextFile(uf);
+				if (next == UNZ_END_OF_LIST_OF_FILE) return true;
+				if (next != UNZ_OK) return false;
+				continue;
+			}
+			BYTE* data = new(std::nothrow) BYTE[info.uncompressed_size ? info.uncompressed_size : 1];
+			if (!data) return false;
+			if (!get_file(uf, data, info.uncompressed_size, NULL)) { delete[] data; return false; }
+			callback(name, data, info.uncompressed_size, pParam);
+			delete[] data;
+			const int next = unzGoToNextFile(uf);
+			if (next == UNZ_END_OF_LIST_OF_FILE) return true;
+			if (next != UNZ_OK) return false;
+		} while (true);
 	}
 
 	/*========================================================================================================*/

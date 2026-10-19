@@ -383,7 +383,8 @@ namespace PPTX
 				if (true == NSDirectory::CreateDirectory(oox_unpacked.GetPath()))
 				{
 					COfficeUtils oOfficeUtils(NULL);
-					oOfficeUtils.ExtractToDirectory(oox_file.GetPath(), oox_unpacked.GetPath(), NULL, 0);
+					if (S_OK != oOfficeUtils.ExtractToDirectory(oox_file.GetPath(), oox_unpacked.GetPath(), NULL, 0))
+						throw COfficeUtils::ArchiveExtractionError();
 
 					COfficeFileFormatChecker office_checker;
 					office_checker.isOOXFormatFile(oox_file.GetPath());
