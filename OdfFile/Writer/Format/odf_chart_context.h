@@ -160,11 +160,17 @@ public:
 		void set_local_table(office_element_ptr & table);
 
 		void set_local_table(bool Val, bool use_cash_only = false);
-		void set_cash(std::wstring format, std::vector<std::wstring> &data, bool categories, bool label);
+		void set_cash(std::wstring format, std::vector<std::wstring> &data, bool categories, bool label, bool string_values = false);
+        // Admission precedes dense allocation; commit transfers the admitted vector.
+        std::vector<std::wstring>* create_cache_values(std::size_t count);
+        void commit_cache_values(std::wstring format, bool categories, bool label, bool strings = false);
+        void reject_cache_values();
 
 	void end_chart();
 
 private:
+    void store_cash(std::wstring format, std::vector<std::wstring>& data, bool categories,
+                    bool label, bool strings, bool take_ownership);
     class Impl;
     _CP_PTR(Impl) impl_;
 };

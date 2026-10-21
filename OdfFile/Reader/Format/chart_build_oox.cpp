@@ -26,6 +26,7 @@
 #include "../../Reader/Converter/xlsx_num_format_context.h"
 
 #include "serialize_elements.h"
+#include "../../Common/chart_cache_limits.h"
 #include "odf_document.h"
 #include <xml/utils.h>
 
@@ -40,6 +41,9 @@
 #include "number_style.h"
 #include "calcs_styles.h"
 #include "chart_build_oox.h"
+#include "odf_document.h"
+#include "odf_document_impl.h"
+#include <boost/algorithm/string/replace.hpp>
 #include "../Converter/measuredigits.h"
 
 #include "../../DataTypes/length.h"
@@ -197,7 +201,7 @@ void object_odf_context::xlsx_convert(oox::xlsx_conversion_context & Context)
 		
 		chart.no_used_local_tables_ = true;
 		
-		oox_convert(chart);
+		oox_convert(chart, Context.root()->get_impl()->get_content());
 
 		Context.end_chart();
 	}
@@ -352,8 +356,153 @@ void object_odf_context::pptx_convert(oox::pptx_conversion_context & Context)
 		//embedded
 	}
 }
+// Resolve only the requested rectangle; repeated empty rows/columns stay compact.
+class chart_worksheet_range : public base_visitor,
+    public visitor<office_document>, public visitor<office_document_content>,
+    public visitor<office_body>, public visitor<office_spreadsheet>,
+    public visitor<table_table>, public visitor<table_table_rows>,
+    public visitor<table_table_header_rows>, public visitor<table_rows_no_group>,
+    public visitor<table_table_row_group>, public visitor<table_table_row>
+{
+public:
+    chart_worksheet_range(const std::wstring& sheet, size_t c1, size_t r1,
+                         size_t c2, size_t r2, std::vector<std::wstring>& values)
+        : sheet_(sheet), c1_(c1), r1_(r1), c2_(c2), r2_(r2), values_(values) {}
+    void visit(office_document& v) { descend(v.office_body_); }
+    void visit(office_document_content& v) { descend(v.office_body_); }
+    void visit(office_body& v) { descend(v.content_); }
+    void visit(office_spreadsheet& v)
+    {
+        for (auto& element : v.content_)
+        {
+            auto* table = dynamic_cast<table_table*>(element.get());
+            if (table && table->attlist_.table_name_.get_value_or(L"") == sheet_)
+            {
+                table->accept(*this);
+                // Include trailing blank points, without shifting later cached indices.
+                values_.resize((r2_ - r1_ + 1) * (c2_ - c1_ + 1));
+                return;
+            }
+        }
+    }
+    void visit(table_table& v) { rows(v.table_rows_and_groups_.content_); }
+    void visit(table_table_rows& v) { rows(v.content_); }
+    void visit(table_table_header_rows& v) { rows(v.content_); }
+    void visit(table_table_row_group& v) { rows(v.table_rows_and_groups_.content_); }
+    void visit(table_rows_no_group& v)
+    {
+        if (v.table_rows_1_.table_table_rows_) descend(v.table_rows_1_.table_table_rows_);
+        else rows(v.table_rows_1_.table_table_row_);
+        descend(v.table_table_header_rows_);
+        if (v.table_rows_2_.table_table_rows_) descend(v.table_rows_2_.table_table_rows_);
+        else rows(v.table_rows_2_.table_table_row_);
+    }
+    void visit(table_table_row& v)
+    {
+        if (row_ > r2_) return;
+        const size_t count = v.attlist_.table_number_rows_repeated_;
+        const size_t end = row_ + (std::min)(count, r2_ - row_ + 1);
+        if (row_ <= r2_ && end > r1_)
+        {
+            std::vector<std::wstring> data(c2_ - c1_ + 1);
+            size_t col = 0;
+            for (auto& element : v.content_)
+            {
+                auto* cell = dynamic_cast<table_table_cell*>(element.get());
+                auto* covered = dynamic_cast<table_covered_table_cell*>(element.get());
+                const size_t stored_repeat = cell ? cell->attlist_.table_number_columns_repeated_ :
+                    covered ? covered->attlist_.table_number_columns_repeated_ : 0;
+                const size_t repeat = (std::min)(stored_repeat, c2_ - col + 1);
+                if (cell && col <= c2_ && col + repeat > c1_)
+                {
+                    const auto value = cell_value(*cell);
+                    for (size_t c = (std::max)(col, c1_); c < (std::min)(col + repeat, c2_ + 1); ++c)
+                        data[c - c1_] = value;
+                }
+                col += repeat;
+                if (col > c2_) break;
+            }
+            for (size_t r = (std::max)(row_, r1_); r < (std::min)(end, r2_ + 1); ++r)
+                values_.insert(values_.end(), data.begin(), data.end());
+        }
+        row_ = end;
+    }
+private:
+    void on_not_impl(const std::string&) override {}
+    void descend(const office_element_ptr& element) { if (element) element->accept(*this); }
+    void rows(const office_element_ptr_array& elements)
+    {
+        for (auto& element : elements)
+        {
+            if (row_ > r2_) break;
+            descend(element);
+        }
+    }
+    static std::wstring cell_value(const table_table_cell& cell)
+    {
+        const auto& a = cell.attlist_.common_value_and_type_attlist_;
+        // Charts need stored numeric values, not locale-formatted display paragraphs.
+        if (a.office_value_) return *a.office_value_;
+        if (a.office_date_value_)
+        {
+            int y, m, d;
+            _CP_OPT(int) h, min, sec;
+            if (oox::parseDateTime(*a.office_date_value_, y, m, d, h, min, sec))
+                return XmlUtils::ToString(oox::convertDate(y, m, d) +
+                    (h && min ? oox::convertTime(*h, *min, sec.get_value_or(0)) : 0.0));
+        }
+        if (a.office_time_value_)
+        {
+            int h, m; double sec;
+            if (oox::parseTime(*a.office_time_value_, h, m, sec))
+                return XmlUtils::ToString(oox::convertTime(h, m, sec));
+        }
+        if (a.office_boolean_value_) return oox::parseBoolVal(*a.office_boolean_value_) ? L"1" : L"0";
+        if (a.office_string_value_) return *a.office_string_value_;
+        std::wstringstream text;
+        bool first = true;
+        for (auto& element : cell.content_.elements_)
+        {
+            if (element && element->get_type() == typeTextP)
+            {
+                if (!first) text << L"\n";
+                element->text_to_stream(text, false);
+                first = false;
+            }
+        }
+        return text.str();
+    }
+    std::wstring sheet_;
+    size_t c1_, r1_, c2_, r2_, row_ = 0;
+    std::vector<std::wstring>& values_;
+};
+
+static std::wstring chart_sheet_name(std::wstring sheet)
+{
+    if (!sheet.empty() && sheet.front() == L'$') sheet.erase(0, 1);
+    if (sheet.size() >= 2 && sheet.front() == L'\'' && sheet.back() == L'\'')
+    {
+        sheet = sheet.substr(1, sheet.size() - 2);
+        boost::algorithm::replace_all(sheet, L"''", L"'");
+    }
+    return sheet;
+}
+
 void object_odf_context::calc_cache_series(std::wstring adress, std::vector<std::wstring> & cash)
 {
+	calc_cache_series(adress, cash, nullptr);
+}
+
+void object_odf_context::calc_cache_series(std::wstring adress, std::vector<std::wstring> & cash, office_element* worksheet_root)
+{
+    chart_cache::budget allowance;
+    calc_cache_series(adress, cash, worksheet_root, allowance);
+}
+
+void object_odf_context::calc_cache_series(std::wstring adress, std::vector<std::wstring>& cash,
+                                          office_element* worksheet_root, chart_cache::budget& allowance)
+{
+    cash.clear();
 	if (adress.empty()) return;
 
 	if (bPivotChart_)
@@ -374,7 +523,8 @@ void object_odf_context::calc_cache_series(std::wstring adress, std::vector<std:
 						{
 							if (cash_values[i].val == L"NaN")
 								cash_values[i].val.clear();
-							cash.push_back(cash_values[i].val);
+							if (!allowance.consume(1)) { cash.clear(); return; }
+				cash.push_back(cash_values[i].val);
 						}
 					//}
 					//if (row == 0)
@@ -404,12 +554,40 @@ void object_odf_context::calc_cache_series(std::wstring adress, std::vector<std:
 
 		bool res1 = oox::getCellAddressInv(ref_1, col_1, row_1);
 		bool res2 = oox::getCellAddressInv(ref_2, col_2, row_2);
+        size_t count = 0;
+        // A chart range may expand at most one million cells, including blanks.
+        if (!res1 || !res2 || !chart_cache::bounded_range(col_1, row_1, col_2, row_2, count) ||
+            !allowance.consume(count))
+        { cash.clear(); return; }
+
+        // LibreOffice records each compact cache column's original worksheet range
+        // in draw:g/svg:desc. Keep that identity separate from physical cache cells.
+        auto mapped = cash_pivot.find(adress);
+        if (mapped != cash_pivot.end())
+        {
+            cash.resize(count);
+            for (const auto& cell : cash_values)
+                if (cell.col == mapped->second.col && cell.row >= mapped->second.row &&
+                    cell.row - mapped->second.row < count)
+                    cash[cell.row - mapped->second.row] = cell.val;
+            return;
+        }
+        // Legacy identical worksheet/cache names without descriptors remain ambiguous;
+        // preserve embedded-cache precedence (covered by legacy-cache-name-shadow).
+        if (worksheet_root && chart_sheet_name(table) != chart_sheet_name(table_name_))
+        {
+            chart_worksheet_range range(chart_sheet_name(table), col_1, row_1, col_2, row_2, cash);
+            worksheet_root->accept(range);
+            return;
+        }
+
 
  		for (size_t i = 0; res1 && res2 && i < cash_values.size(); i++)
 		{
 			if (cash_values[i].col >= col_1 && cash_values[i].col <= col_2 &&
 				cash_values[i].row >= row_1 && cash_values[i].row <= row_2)
 			{
+				if (cash.size() >= count) return;
 				cash.push_back(cash_values[i].val);
 			}
 		}
@@ -426,6 +604,26 @@ struct axises_sort
 
 void object_odf_context::oox_convert(oox::oox_chart_context & chart_context)
 {
+	oox_convert(chart_context, nullptr);
+}
+
+void object_odf_context::oox_convert(oox::oox_chart_context & chart_context, office_element* worksheet_root)
+{
+    // OOXML retains a copy of shared domain/category data in each series.
+    // Charge every retained copy, rather than only distinct worksheet ranges.
+    chart_cache::budget allowance;
+    auto is_local_cache_reference = [this](const std::wstring& address)
+    {
+        // A worksheet may itself be named local-table or contain that text.
+        // A range descriptor identifies a bound source even in that case.
+        if (address.empty() || table_name_.empty() || cash_pivot.find(address) != cash_pivot.end())
+            return false;
+        formulasconvert::odf2oox_converter converter;
+        std::wstring table, first, last;
+        return converter.find_first_last_ref(address, table, first, last) &&
+            chart_sheet_name(table) == chart_sheet_name(table_name_);
+    };
+
 	chart_context.set_pivot_chart	(pivot_source_);
 
 	chart_context.set_title		(title_, sub_title_);
@@ -490,17 +688,17 @@ void object_odf_context::oox_convert(oox::oox_chart_context & chart_context)
 		std::vector<std::wstring>		cat_cash;
 		std::vector<std::wstring>		label_cash;
 
-		calc_cache_series (domain_cell_range_adress_,			domain_cash);
-		calc_cache_series (series_[i].cell_range_address_,		cell_cash);
-		calc_cache_series (series_[i].label_cell_address_,		label_cash);
+		calc_cache_series (domain_cell_range_adress_,			domain_cash, worksheet_root, allowance);
+		calc_cache_series (series_[i].cell_range_address_,		cell_cash, worksheet_root, allowance);
+		calc_cache_series (series_[i].label_cell_address_,		label_cash, worksheet_root, allowance);
 		
 		if (chart_context.no_used_local_tables_ && false == table_name_.empty())
 		{//remove links to the local cache table
-			if (std::wstring::npos != series_[i].cell_range_address_.find(table_name_))
+			if (is_local_cache_reference(series_[i].cell_range_address_))
 			{
 				series_[i].cell_range_address_.clear();
 			}
-			if (std::wstring::npos != series_[i].label_cell_address_.find(table_name_))
+			if (is_local_cache_reference(series_[i].label_cell_address_))
 			{
 				series_[i].label_cell_address_.clear();
 			}
@@ -508,7 +706,7 @@ void object_odf_context::oox_convert(oox::oox_chart_context & chart_context)
 		
 		if (false == categories_.empty())
 		{//can't be cleared of local links. can be used in subsequent series
-			calc_cache_series (categories_[0],	cat_cash);
+			calc_cache_series (categories_[0],	cat_cash, worksheet_root, allowance);
 		}
 
 		std::wstring			formatCode	= L"General";
@@ -577,7 +775,7 @@ void object_odf_context::oox_convert(oox::oox_chart_context & chart_context)
 		{
 			if (chart_context.no_used_local_tables_)
 			{
-				if ( bPivotChart_ || table_name_.empty() || std::wstring::npos == categories_[0].find(table_name_))
+				if ( bPivotChart_ || !is_local_cache_reference(categories_[0]))
 				{
 					current->set_formula_series(0, categories_[0], L"General", true);
 				}
@@ -813,15 +1011,23 @@ bool process_build_object::visit_table(std::wstring const & name)
     return true;
 }
 
+template<class T>
+static T chart_counter_add(T value, unsigned int repeated)
+{
+    const T maximum = (std::numeric_limits<T>::max)();
+    if (value < 0 || repeated > static_cast<unsigned int>(maximum - value)) return maximum;
+    return value + static_cast<T>(repeated);
+}
+
 void process_build_object::visit_column(unsigned int repeated)
 {
-    object_odf_context_.columns_count_ += repeated;
+    object_odf_context_.columns_count_ = chart_counter_add(object_odf_context_.columns_count_, repeated);
     object_odf_context_.columns_.push_back(repeated);    
 }
 bool process_build_object::visit_rows(unsigned int repeated)
 {
     object_odf_context_.current_table_column_ = 0;
-    object_odf_context_.current_table_row_ += repeated;
+    object_odf_context_.current_table_row_ = chart_counter_add(object_odf_context_.current_table_row_, repeated);
 
     return true;
 }
@@ -1289,9 +1495,9 @@ void process_build_object::visit(table_table_cell& val)
 
 	object_odf_context_.cash_values.push_back(cell_);
 	
-	object_odf_context_.current_table_column_+=repeated;
+	object_odf_context_.current_table_column_ = chart_counter_add(object_odf_context_.current_table_column_, repeated);
 
-	if (object_odf_context_.bPivotChart_)
+	if (object_odf_context_.bPivotChart_ || !cell_desc.empty())
 	{
 		object_odf_context_.cash_pivot.insert(std::make_pair(cell_desc, cell_));
 	}

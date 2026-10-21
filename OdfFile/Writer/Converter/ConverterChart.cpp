@@ -23,6 +23,7 @@
  *
  */
 
+#include "../../Common/chart_cache_limits.h"
 #include "Converter.h"
 
 #include "../../../OfficeUtils/src/OfficeUtils.h"
@@ -1375,48 +1376,70 @@ void OoxConverter::convert(OOX::Spreadsheet::CT_ExternalData *external_data)
 		odf_context()->chart_context()->set_local_table(true);//while we are using the cache...
 	}
 }
-void OoxConverter::convert(OOX::Spreadsheet::CT_NumData	*num_data, bool categories, bool label)
+template<class Cache>
+static bool bounded_chart_cache_size(const Cache* cache, size_t& count)
 {
-	if (num_data == NULL)return;
+    count = cache->m_ptCount.IsInit() ? *cache->m_ptCount : 0;
+    if (count > cpdoccore::chart_cache::max_points ||
+        cache->m_pt.size() > cpdoccore::chart_cache::max_points) return false;
+    for (size_t i = 0; i < cache->m_pt.size(); ++i)
+    {
+        const auto* point = cache->m_pt[i];
+        if (!point || !point->m_v.IsInit()) continue;
+        const size_t index = point->m_idx.IsInit() ? *point->m_idx : i;
+        if (index >= cpdoccore::chart_cache::max_points) return false;
+        count = (std::max)(count, index + 1);
+    }
+    return true;
+}
 
-	//std::vector<double> data;
-	std::vector<std::wstring> data;
+void OoxConverter::convert(OOX::Spreadsheet::CT_NumData *num_data, bool categories, bool label)
+{
+    if (!num_data) return;
 
-	for (size_t i = 0; i < num_data->m_pt.size(); i++)
-	{
-		if (num_data->m_pt[i] && num_data->m_pt[i]->m_v.IsInit())
-		{
-			data.push_back(*num_data->m_pt[i]->m_v);
-			//double val=0;
-			//try
-			//{		
-			//	val = boost::lexical_cast<double>(num_data->m_pt[i]->m_v->GetBuffer());
-			//}catch(...)
-			//{
-			//}
-			//data.push_back(val);
-		}
-	}
-	std::wstring format;
-	if (num_data->m_formatCode.IsInit()) format = *num_data->m_formatCode;
-	
-	odf_context()->chart_context()->set_cash(format, data, categories, label);
+    // Cache point indices are coordinates, not a dense list of present values.
+    size_t count = 0;
+    auto* chart = odf_context()->chart_context();
+    if (!bounded_chart_cache_size(num_data, count))
+    {
+        chart->reject_cache_values();
+        return;
+    }
+    auto* data = chart->create_cache_values(count);
+    if (!data) return;
+    for (size_t i = 0; i < num_data->m_pt.size(); ++i)
+    {
+        const auto* point = num_data->m_pt[i];
+        if (!point || !point->m_v.IsInit()) continue;
+        const size_t index = point->m_idx.IsInit() ? *point->m_idx : i;
+        (*data)[index] = *point->m_v;
+    }
+    std::wstring format;
+    if (num_data->m_formatCode.IsInit()) format = *num_data->m_formatCode;
+    chart->commit_cache_values(format, categories, label);
 }
 
 void OoxConverter::convert(OOX::Spreadsheet::CT_StrData *str_data, bool categories, bool label)
 {
-	if (str_data == NULL)return;
-	std::vector<std::wstring> data;
+    if (!str_data) return;
 
-	for (size_t i = 0; i < str_data->m_pt.size(); i++)
-	{
-		if (str_data->m_pt[i] && str_data->m_pt[i]->m_v.IsInit())
-			data.push_back(*str_data->m_pt[i]->m_v);
-
-	}
-	std::wstring format;
-
-	odf_context()->chart_context()->set_cash(format, data, categories, label);
+    size_t count = 0;
+    auto* chart = odf_context()->chart_context();
+    if (!bounded_chart_cache_size(str_data, count))
+    {
+        chart->reject_cache_values();
+        return;
+    }
+    auto* data = chart->create_cache_values(count);
+    if (!data) return;
+    for (size_t i = 0; i < str_data->m_pt.size(); ++i)
+    {
+        const auto* point = str_data->m_pt[i];
+        if (!point || !point->m_v.IsInit()) continue;
+        const size_t index = point->m_idx.IsInit() ? *point->m_idx : i;
+        (*data)[index] = *point->m_v;
+    }
+    chart->commit_cache_values(L"", categories, label, true);
 }
 
 //---------------------------------------------------------------------------------------------------------------

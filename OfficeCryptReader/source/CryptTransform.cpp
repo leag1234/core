@@ -1374,7 +1374,8 @@ int ODFEncryptor::Encrypt (const std::wstring & wspassword, unsigned char* data,
 
 	bool bPadding = (cryptData.cipherAlgorithm == CRYPT_METHOD::AES_CBC);
 	
-	if (bPadding && (size_out % PADDING_SIZE != 0))
+	// W3C padding includes a full block when the compressed input is aligned.
+	if (bPadding)
 		size_out = (size_out / PADDING_SIZE + 1) * PADDING_SIZE;
 
 	data_out = new unsigned char[size_out]; 	

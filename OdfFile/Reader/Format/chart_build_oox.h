@@ -23,6 +23,7 @@
  *
  */
 #pragma once
+#include "../../Common/chart_cache_limits.h"
 
 #include <ostream>
 #include <sstream>
@@ -106,11 +107,15 @@ public:
     void add_point(unsigned int rep);
 	
     void calc_cache_series(std::wstring adress, std::vector<std::wstring> & cash);
+    void calc_cache_series(std::wstring adress, std::vector<std::wstring> & cash, office_element* worksheet_root);
+    void calc_cache_series(std::wstring adress, std::vector<std::wstring>& cash, office_element* worksheet_root,
+                           chart_cache::budget& allowance);
 	
 	void xlsx_convert	(oox::xlsx_conversion_context & Context);
 	void docx_convert	(oox::docx_conversion_context & Context);
 	void pptx_convert	(oox::pptx_conversion_context & Context);
 	void oox_convert	(oox::oox_chart_context & chart);
+	void oox_convert(oox::oox_chart_context & chart, office_element* worksheet_root);
 
     double						width_pt_;
     double						height_pt_;

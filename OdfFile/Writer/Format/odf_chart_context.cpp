@@ -23,6 +23,8 @@
  *
  */
 
+#include "../../Common/chart_cache_limits.h"
+#include <set>
 #include "logging.h"
 
 #include <boost/algorithm/string.hpp>
@@ -56,6 +58,50 @@ namespace cpdoccore
 
 namespace odf_writer
 {
+// Ordinary worksheet charts keep their parent data source as LibreOffice does.
+class worksheet_chart : public chart_chart
+{
+public:
+    bool parent_source_ = false;
+    void serialize(std::wostream& stream) override
+    {
+        CP_XML_WRITER(stream)
+        {
+            CP_XML_NODE_SIMPLE()
+            {
+                chart_chart_attlist_.serialize(CP_GET_XML_NODE());
+                if (parent_source_)
+                {
+                    CP_XML_ATTR(L"xlink:type", L"simple");
+                    CP_XML_ATTR(L"xlink:href", L"..");
+                }
+                for (const auto& child : content_) child->serialize(CP_XML_STREAM());
+            }
+        }
+    }
+};
+
+// Cached columns retain their original range without rewriting worksheet formulas.
+// This is the draw:g/svg:desc convention used by LibreOffice's chart table.
+class chart_cached_range : public office_element
+{
+public:
+    explicit chart_cached_range(const std::wstring& range) : range_(range) {}
+    const wchar_t* get_ns() const override { return L"draw"; }
+    const wchar_t* get_name() const override { return L"g"; }
+    ElementType get_type() const override { return typeDrawG; }
+    void create_child_element(const std::wstring&, const std::wstring&) override {}
+    void add_child_element(const office_element_ptr&) override {}
+    void serialize(std::wostream& stream) override
+    {
+        stream << L"<draw:g><svg:desc>" << XmlUtils::EncodeXmlString(range_)
+               << L"</svg:desc></draw:g>";
+    }
+private:
+    std::wstring range_;
+};
+
+
 	static const std::wstring default_MS_series_colors[] = 
 	{
         L"#355a86", L"#883533", L"#6e963c", L"#594573", L"#327a8d", L"#3d679a", L"#9d3e3b", L"#7e9945", L"#674f84", L"#398ba2", L"#cb7934",
@@ -83,6 +129,8 @@ namespace odf_writer
 		bool label;
 
 		std::vector<std::wstring> data_str;
+        bool string_values = false;
+        bool worksheet_bound = false;
 	};
 	struct 	odf_chart_state
 	{
@@ -119,15 +167,18 @@ namespace odf_writer
 	{
 		int				col;
 		int				row;
-		bool			label;
+		bool			string_value;
 		bool			cash_only;
 		std::wstring	val;
+        std::wstring range;
 	};
 	struct odf_category_state
 	{
 		std::wstring ref;
 		std::wstring format_code;
 		int type;
+        // Non-owning links to domains already attached to this chart's series.
+        std::vector<chart_domain*> domains;
 
 	};
 class odf_chart_context::Impl
@@ -139,6 +190,7 @@ public:
 		current_series_count_	= 0;
 		local_table_reset_ref_	= false;
 		local_table_cache_required_ = false;
+        local_table_provided_ = false;
 
 		if (odf_context_->type == SpreadsheetDocument)
 		{
@@ -180,12 +232,25 @@ public:
 		std::wstring	format_code;
 		bool			label;
 		int				index_cash;
+        bool worksheet_bound = false;
 	};
 	std::vector<_range>					data_cell_ranges_;
+    chart_cache::budget cache_budget_;
+    std::vector<std::wstring> pending_cache_values_;
+    void add_data_range(_range range)
+    {
+        range.worksheet_bound = !range.ref.empty() &&
+            odf_context_->type == SpreadsheetDocument && !local_table_enabled_;
+        if (range.worksheet_bound)
+            if (auto* chart = dynamic_cast<worksheet_chart*>(get_current_chart()))
+                chart->parent_source_ = true;
+        data_cell_ranges_.push_back(std::move(range));
+    }
 	
 	std::vector<odf_cash_state>			cash_;
 	bool								local_table_enabled_;
 	bool								local_table_cache_required_;
+    bool local_table_provided_;
 	bool								local_table_reset_ref_;
 
 	std::vector<odf_chart_level_state>	current_level_;	//constantly changing list of inheritance levels
@@ -312,6 +377,8 @@ void odf_chart_context::Impl::clear_current()
 	group_series_.clear();
 	data_cell_ranges_.clear();
 	cash_.clear();
+    cache_budget_ = chart_cache::budget();
+    std::vector<std::wstring>().swap(pending_cache_values_);
 	series_.clear();
 	
 	plot_area_ = office_element_ptr();
@@ -322,6 +389,7 @@ void odf_chart_context::Impl::clear_current()
 	current_series_count_	= 0;
 	local_table_reset_ref_	= false;
 	local_table_cache_required_ = false;
+        local_table_provided_ = false;
 	
 	if (odf_context_->type == SpreadsheetDocument)
 	{
@@ -370,7 +438,12 @@ odf_text_context* odf_chart_context::text_context()
 void odf_chart_context::start_chart(office_element_ptr & root)
 {
 	office_element_ptr chart_elm;
-	create_element(L"chart", L"chart", chart_elm, impl_->odf_context_);
+	if (impl_->odf_context_->type == SpreadsheetDocument)
+    {
+        chart_elm = office_element_ptr(new worksheet_chart());
+        chart_elm->setContext(impl_->odf_context_);
+    }
+    else create_element(L"chart", L"chart", chart_elm, impl_->odf_context_);
 
 	chart_chart *chart = dynamic_cast<chart_chart*>(chart_elm.get());
 	if (chart == NULL)return;
@@ -882,6 +955,7 @@ void odf_chart_context::end_group_series()
 
 void odf_chart_context::add_domain(const std::wstring & odf_ref)
 {
+    if (odf_ref.empty()) return;
 	size_t level = impl_->current_level_.size();
 	if (level == 0) return;
 
@@ -892,6 +966,9 @@ void odf_chart_context::add_domain(const std::wstring & odf_ref)
 	if (domain == NULL)return;
 
 	domain->table_cell_range_address_ = odf_ref;
+    if (!impl_->categories_.empty() && impl_->categories_.back().type == 2 &&
+        impl_->categories_.back().ref == odf_ref)
+        impl_->categories_.back().domains.push_back(domain);
 	
 	if (impl_->current_level_.back().elm) impl_->current_level_.back().elm->add_child_element(elm);
 
@@ -901,6 +978,7 @@ void odf_chart_context::add_domain(const std::wstring & odf_ref)
 
 void odf_chart_context::add_categories(const std::wstring & odf_ref, const std::wstring & format_code, office_element_ptr & axis_elm)
 {
+    if (odf_ref.empty()) return;
 	size_t level = impl_->current_level_.size();
 
 	bool bDataScale = false;
@@ -1711,7 +1789,7 @@ void odf_chart_context::set_series_value_formula(const std::wstring & oox_ref, c
 	if (series == NULL)return;
 
 	Impl::_range r (odf_ref, format_code, false, series);
-	impl_->data_cell_ranges_.push_back(r);
+	impl_->add_data_range(std::move(r));
 
 	if (false == odf_ref.empty())
 	{
@@ -1728,7 +1806,7 @@ void odf_chart_context::set_series_label_formula(const std::wstring & oox_ref)
 	if (series == NULL) return;	
 
 	Impl::_range r (odf_ref, L"", true, series);
-	impl_->data_cell_ranges_.push_back(r);
+	impl_->add_data_range(std::move(r));
 	
 	if (!odf_ref.empty())
 	{
@@ -1741,7 +1819,7 @@ void odf_chart_context::set_category_axis_formula(const std::wstring & oox_ref, 
 	std::wstring odf_ref = impl_->convert_formula(oox_ref);
 
 	Impl::_range r (odf_ref, format_code, true, NULL);
-	impl_->data_cell_ranges_.push_back(r);
+	impl_->add_data_range(std::move(r));
 	
 	odf_category_state category_state = {odf_ref, format_code, type};
 	impl_->categories_.push_back(category_state);
@@ -1771,13 +1849,53 @@ void odf_chart_context::set_series_pie_bubble(bool val)
 //	impl_->cash_.push_back(state);
 //}
 
-void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstring> & data_str, bool categories, bool label)
+std::vector<std::wstring>* odf_chart_context::create_cache_values(std::size_t count)
 {
-	if (impl_->data_cell_ranges_.empty())	return;
-	if (data_str.empty())					return;
-
-	std::wstring ref = impl_->data_cell_ranges_.back().ref;
-	if (ref.empty() && !categories && !label) impl_->local_table_cache_required_ = true;
+    if (impl_->data_cell_ranges_.empty() || !count || !impl_->cache_budget_.consume(count))
+    {
+        reject_cache_values();
+        return nullptr;
+    }
+    impl_->pending_cache_values_.resize(count);
+    return &impl_->pending_cache_values_;
+}
+void odf_chart_context::commit_cache_values(std::wstring format, bool categories, bool label, bool strings)
+{
+    store_cash(format, impl_->pending_cache_values_, categories, label, strings, true);
+    std::vector<std::wstring>().swap(impl_->pending_cache_values_);
+}
+void odf_chart_context::reject_cache_values()
+{
+    if (impl_->data_cell_ranges_.empty()) return;
+    auto& range = impl_->data_cell_ranges_.back();
+    // Worksheet formulas remain usable without a derived cache.
+    if (range.worksheet_bound || range.index_cash >= 0) return;
+    if (range.series)
+    {
+        if (range.label) range.series->chart_series_attlist_.chart_label_cell_address_ = boost::none;
+        else range.series->chart_series_attlist_.chart_values_cell_range_address_ = boost::none;
+    }
+    else if (!impl_->categories_.empty()) impl_->categories_.back().ref.clear();
+    range.ref.clear();
+}
+void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstring> & data_str, bool categories, bool label, bool string_values)
+{
+    if (impl_->data_cell_ranges_.empty() || data_str.empty() ||
+        !impl_->cache_budget_.consume(data_str.size()))
+    {
+        reject_cache_values();
+        return;
+    }
+    store_cash(format_code, data_str, categories, label, string_values, false);
+}
+void odf_chart_context::store_cash(std::wstring format_code, std::vector<std::wstring>& data_str,
+                                  bool categories, bool label, bool string_values, bool take_ownership)
+{
+    if (impl_->data_cell_ranges_.empty() || data_str.empty()) return;
+    std::wstring ref = impl_->data_cell_ranges_.back().ref;
+    bool worksheet_bound = impl_->data_cell_ranges_.back().worksheet_bound;
+	if (worksheet_bound ||
+        (ref.empty() && !categories && !label)) impl_->local_table_cache_required_ = true;
 	
 	int count_cash_values	= 0;
 	bool by_row				= true;	
@@ -1790,18 +1908,28 @@ void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstr
 		{
 			if (impl_->cash_[i].label || impl_->cash_[i].categories)
 			{
+                const size_t borrowed_size = impl_->cash_[i].data_str.size();
+                if (borrowed_size > data_str.size() &&
+                    !impl_->cache_budget_.consume(borrowed_size - data_str.size()))
+                {
+                    reject_cache_values();
+                    return;
+                }
 				ref			= impl_->cash_[i].ref;
 				data_str	= impl_->cash_[i].data_str;
 				format_code	= impl_->cash_[i].format_code;
+                worksheet_bound = impl_->cash_[i].worksheet_bound;
+                string_values = impl_->cash_[i].string_values;
 				break;
 			}
 		}
 	}
-	if (ref.empty() && impl_->data_cell_ranges_.size() > 1)
+    auto previous = impl_->data_cell_ranges_.rbegin();
+    if (previous != impl_->data_cell_ranges_.rend()) ++previous;
+    while (previous != impl_->data_cell_ranges_.rend() && previous->ref.empty()) ++previous;
+	if (ref.empty() && previous != impl_->data_cell_ranges_.rend())
 	{//direction, count cash points
-		int index_cash_y = impl_->data_cell_ranges_[impl_->data_cell_ranges_.size() - 2].index_cash;
-
-		std::wstring ref_y = impl_->data_cell_ranges_[impl_->data_cell_ranges_.size() - 2].ref;
+		std::wstring ref_y = previous->ref;
 		
 		std::vector<std::wstring> refs;
 		boost::algorithm::split(refs, ref_y, boost::algorithm::is_any_of(L":"), boost::algorithm::token_compress_on);
@@ -1863,8 +1991,11 @@ void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstr
 
 	if (!ref.empty() && !data_str.empty())
 	{
-		odf_cash_state state = {ref, format_code, categories, label, data_str};	
-		impl_->cash_.push_back(state);
+        odf_cash_state state = {ref, format_code, categories, label, {}, string_values, worksheet_bound};
+        if (take_ownership) state.data_str.swap(data_str);
+        else state.data_str = data_str;
+        impl_->cash_.push_back(std::move(state));
+        impl_->data_cell_ranges_.back().worksheet_bound = worksheet_bound;
 		int cash_ind = (int)impl_->cash_.size() - 1;
 
 		impl_->data_cell_ranges_.back().index_cash = cash_ind;	
@@ -1892,7 +2023,8 @@ void odf_chart_context::set_cash(std::wstring format_code, std::vector<std::wstr
 }
 void odf_chart_context::set_local_table(office_element_ptr & table_elm)
 {
-	if (!table_elm) return;
+    if (!table_elm) return;
+    impl_->local_table_provided_ = true;
 
 	impl_->current_level_[0].elm->add_child_element(table_elm);
 	size_t level = impl_->current_level_.size();
@@ -1966,8 +2098,12 @@ int odf_chart_context::Impl::create_local_table_rows(int curr_row, ods_table_sta
 		create_element(L"table", L"table-cell",cell_elm, odf_context_);
 		
         table_state->start_cell(cell_elm, style_null);
-			table_state->set_cell_value(cells[i].val, true);
-			//add type ???
+			if (cells[i].string_value)
+                table_state->set_cell_format_value(office_value_type::String);
+            if (!cells[i].val.empty())
+                table_state->set_cell_value(cells[i].val, true);
+            if (!cells[i].range.empty())
+                cell_elm->add_child_element(office_element_ptr(new chart_cached_range(cells[i].range)));
 		table_state->end_cell();
 
 		curr_cell = cells[i].col;
@@ -1977,7 +2113,7 @@ int odf_chart_context::Impl::create_local_table_rows(int curr_row, ods_table_sta
 
 void odf_chart_context::Impl::create_local_table()
 {
-	if (!local_table_enabled_ && !local_table_cache_required_) return;
+	if (local_table_provided_ || cash_.empty() || (!local_table_enabled_ && !local_table_cache_required_)) return;
 
 	std::vector<_cell_cash> cells_cash;
 	std::vector<_cell_cash> cells_cash_label;
@@ -1991,22 +2127,102 @@ void odf_chart_context::Impl::create_local_table()
 	int min_col = 0xffff;
 	int min_row = 0xffff;
 	
+    // Ordinary caches retain the traditional name unless a bound worksheet uses it.
+    std::set<std::wstring> worksheet_names;
+    // Rejected caches still retain their worksheet formulas and reserve those names.
+    for (const auto& cache : data_cell_ranges_)
+    {
+        if (!cache.worksheet_bound) continue;
+        std::wstring first = cache.ref.substr(0, cache.ref.find(L':'));
+        const size_t dot = first.rfind(L'.');
+        if (dot == std::wstring::npos) continue;
+        std::wstring name = first.substr(0, dot);
+        if (!name.empty() && name.front() == L'$') name.erase(0, 1);
+        if (name.size() >= 2 && name.front() == L'\'' && name.back() == L'\'')
+            name = name.substr(1, name.size() - 2);
+        worksheet_names.insert(boost::algorithm::to_lower_copy(name));
+    }
+    for (size_t suffix = 1; worksheet_names.count(table_name); ++suffix)
+        table_name = L"local-table-" + std::to_wstring(suffix);
+    if (table_name != L"local-table")
+    {
+        std::map<int, std::wstring> literal_ranges;
+        for (size_t i = 0; i < cash_.size(); ++i)
+        {
+            if (cash_[i].worksheet_bound) continue;
+            auto& ref = cash_[i].ref;
+            const std::wstring prefix = L"local-table.", replacement = table_name + L".";
+            for (size_t pos = 0; (pos = ref.find(prefix, pos)) != std::wstring::npos; pos += replacement.size())
+                ref.replace(pos, prefix.size(), replacement);
+            literal_ranges[static_cast<int>(i)] = ref;
+        }
+        size_t category = 0;
+        for (auto& range : data_cell_ranges_)
+        {
+            const auto renamed = literal_ranges.find(range.index_cash);
+            if (renamed != literal_ranges.end())
+            {
+                range.ref = renamed->second;
+                if (range.series)
+                {
+                    if (range.label) range.series->chart_series_attlist_.chart_label_cell_address_ = range.ref;
+                    else range.series->chart_series_attlist_.chart_values_cell_range_address_ = range.ref;
+                }
+                else if (category < categories_.size())
+                {
+                    auto& state = categories_[category];
+                    state.ref = range.ref;
+                    // Domains precede cache materialization for scatter and bubble charts.
+                    for (auto* domain : state.domains)
+                        domain->table_cell_range_address_ = range.ref;
+                }
+            }
+            if (!range.series) ++category;
+        }
+    }
+
 	//Throw out duplicate refs
 	for (size_t i = 0; i < cash_.size(); i++)
 	{
 		for (size_t j = i + 1; j < cash_.size(); j++)
 		{
-			if (cash_[j].ref == cash_[i].ref && cash_[j].ref.length() > 1)
+			if (cash_[j].ref == cash_[i].ref && cash_[j].worksheet_bound == cash_[i].worksheet_bound && cash_[j].ref.length() > 1)
 			{
 				cash_.erase(cash_.begin() + j);
 			}
 		}
 	}
 
-	for (size_t i = 0; i < cash_.size(); i++)
-	{
-		// Literal spreadsheet series need a cache table without remapping worksheet formulas.
-		if (!local_table_enabled_ && cash_[i].ref.find(L"local-table.") != 0) continue;
+    // Reserve the existing literal cache coordinates before allocating bound ranges.
+    int next_bound_column = 1;
+    if (!local_table_enabled_)
+    {
+        for (const auto& cache : cash_)
+        {
+            if (cache.worksheet_bound) continue;
+            const size_t colon = cache.ref.find(L':');
+            const std::wstring last = colon == std::wstring::npos ? cache.ref : cache.ref.substr(colon + 1);
+            int col = -1, row = -1;
+            utils::parsing_ref(last.substr(last.rfind(L'.') + 1), col, row);
+            next_bound_column = (std::max)(next_bound_column, col + 1);
+        }
+    }
+    for (size_t i = 0; i < cash_.size(); i++)
+    {
+        if (!local_table_enabled_ && cash_[i].worksheet_bound)
+        {
+            // Distinct worksheet identities may use exactly the same source coordinates.
+            // Store every bound range in its own compact column, with a range descriptor.
+            for (size_t j = 0; j < cash_[i].data_str.size(); ++j)
+            {
+                _cell_cash cell = {next_bound_column, static_cast<int>(j + 1),
+                    cash_[i].string_values, false, cash_[i].data_str[j]};
+                if (j == 0) cell.range = cash_[i].ref;
+                cells_cash.push_back(cell);
+            }
+            max_columns = (std::max)(max_columns, next_bound_column++);
+            continue;
+        }
 
 		std::vector<std::wstring> refs;
 		boost::algorithm::split(refs,cash_[i].ref, boost::algorithm::is_any_of(L":"), boost::algorithm::token_compress_on);
@@ -2067,7 +2283,7 @@ void odf_chart_context::Impl::create_local_table()
 				c.row	= (row2 == row1) ? row1 : row1 + j;
 				
 				c.val	= cash_[i].data_str[j];
-				c.label = false;
+				c.string_value = cash_[i].string_values;
 			}
 			else
 			{
