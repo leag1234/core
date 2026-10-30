@@ -95,10 +95,10 @@ namespace PPTX
 
 					smart_ptr<OOX::Media> pMedia;
 
-					if (pRels != NULL)
+					if (pRels != NULL && !pRels->IsExternal(embed.get()))
 						pMedia = pRels->Get<OOX::Media>(embed.get());
 
-					if (pMedia.IsInit())
+					if (pMedia.IsInit() && !pMedia->IsExternal())
 					{
 						NSShapeImageGen::CMediaInfo oId = pWriter->m_pCommon->m_pMediaManager->WriteMedia(pMedia->filename().GetPath());
 						std::wstring s = oId.GetPath2();

@@ -73,7 +73,7 @@ namespace OOX
 	void Media::read(const CPath& filename)
 	{
 		m_filename = filename;
-		m_bExist = NSFile::CFileBinary::Exists(m_filename.GetPath());
+		m_bExist = !m_bExternal && NSFile::CFileBinary::Exists(m_filename.GetPath());
 
 		if (m_bExist)
 			m_sOutputFilename = filename.GetFilename();
@@ -107,9 +107,9 @@ namespace OOX
 	}
 	void Media::set_filename(const std::wstring & file_path, bool bExternal)
 	{
+		m_bExternal = bExternal;
 		read(OOX::CPath(file_path, !bExternal));
 			
-		m_bExternal = bExternal;
 		m_sOutputFilename = m_filename.GetFilename();
 	}
 	void Media::set_filename(CPath & file_path, bool bExternal, bool bDefault)
@@ -119,7 +119,7 @@ namespace OOX
 		
 		if (!bDefault) m_sOutputFilename = m_filename.GetFilename();
 		
-		m_bExist = NSFile::CFileBinary::Exists(m_filename.GetPath());
+		m_bExist = !m_bExternal && NSFile::CFileBinary::Exists(m_filename.GetPath());
 	}
 	void Media::copy_to(const CPath& path) const
 	{
