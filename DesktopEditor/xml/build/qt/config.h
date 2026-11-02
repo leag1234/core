@@ -42,6 +42,10 @@
 #define HAVE_STDLIB_H
 #define HAVE_TIME_H
 #define HAVE_FCNTL_H
+/* POSIX builds (Linux, macOS, Emscripten for the WebAssembly stage) need read/write/close/getcwd from unistd.h */
+#if !defined(_WIN32) && !defined(HAVE_UNISTD_H)
+#define HAVE_UNISTD_H
+#endif
 //#include <io.h>
 //#include <direct.h>
 #endif

@@ -948,9 +948,9 @@ add_library(graphics SHARED
     ${BROTLI_INSTALL_DIR_ABS}/c/dec/bit_reader.c
     ${BROTLI_INSTALL_DIR_ABS}/c/dec/decode.c
     ${BROTLI_INSTALL_DIR_ABS}/c/dec/huffman.c
-    # ${BROTLI_INSTALL_DIR_ABS}/c/dec/prefix.c
+    ${BROTLI_INSTALL_DIR_ABS}/c/dec/prefix.c
     ${BROTLI_INSTALL_DIR_ABS}/c/dec/state.c
-    # ${BROTLI_INSTALL_DIR_ABS}/c/dec/static_init.c
+    ${BROTLI_INSTALL_DIR_ABS}/c/dec/static_init.c
 )
 
 if( APPLE )
@@ -1069,6 +1069,15 @@ if(LINUX)
     target_compile_options(graphics PRIVATE
         -fvisibility=default
         -fvisibility-inlines-hidden
+    )
+
+    # Don't leak the bundled third-party C libraries (libpng, zlib, ...),
+    # they would interpose the system ones used by GTK/gdk-pixbuf
+    target_link_options(graphics PRIVATE
+        "LINKER:--version-script=${CMAKE_CURRENT_LIST_DIR}/graphics.map"
+    )
+    set_property(TARGET graphics APPEND PROPERTY
+        LINK_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/graphics.map"
     )
 endif()
 
