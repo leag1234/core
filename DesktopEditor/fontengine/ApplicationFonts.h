@@ -61,12 +61,16 @@ public:
 	{
 		// 0 [Cambria Math]
 		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"Cambria Math", 0));
+		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"STIX Two Math", 0));
+		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"DejaVu Math TeX Gyre", 0));
 		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"Asana Math", 0));
 		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"XITS Math", 0));
 		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"Latin Modern", 0));
 
 		std::vector<std::wstring> ar0;
 		ar0.push_back(L"Cambria Math");
+		ar0.push_back(L"STIX Two Math");
+		ar0.push_back(L"DejaVu Math TeX Gyre");
 		ar0.push_back(L"Asana Math");
 		ar0.push_back(L"XITS Math");
 		ar0.push_back(L"Latin Modern");
