@@ -1,11 +1,10 @@
 #!/bin/sh
 # Run this to generate all the initial makefiles, etc.
 
-srcdir=`dirname $0`
-test -z "$srcdir" && srcdir=. 
-
 THEDIR=`pwd`
-cd $srcdir
+cd `dirname $0`
+srcdir=`pwd`
+
 DIE=0
 
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
@@ -65,8 +64,7 @@ if [ ! -d $srcdir/m4 ]; then
         mkdir $srcdir/m4
 fi
 
-# Replaced by autoreconf below
-autoreconf -if -Wall
+aclocal
 
 if ! grep -q pkg.m4 aclocal.m4; then
     cat <<EOF
@@ -76,6 +74,8 @@ your distribution or set ACLOCAL_PATH to the directory containing pkg.m4.
 EOF
     exit 1
 fi
+
+autoreconf -if -Wall || exit 1
 
 cd $THEDIR
 
@@ -89,6 +89,7 @@ if test -z "$NOCONFIGURE"; then
     if test "$?" -ne 0; then
         echo
         echo "Configure script failed, check config.log for more info."
+        exit 1
     else
         echo
         echo "Now type 'make' to compile libxml2."

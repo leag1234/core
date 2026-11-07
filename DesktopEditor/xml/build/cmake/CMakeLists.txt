@@ -13,7 +13,6 @@ function(add_libxml TARGET XML_ROOT_DIR ONLY_LIBXML)
         ${LIBXML2_SOURCES_DIR}/chvalid.c
         ${LIBXML2_SOURCES_DIR}/debugXML.c
         ${LIBXML2_SOURCES_DIR}/dict.c
-        ${LIBXML2_SOURCES_DIR}/DOCBparser.c
         ${LIBXML2_SOURCES_DIR}/encoding.c
         ${LIBXML2_SOURCES_DIR}/entities.c
         ${LIBXML2_SOURCES_DIR}/error.c
@@ -21,14 +20,10 @@ function(add_libxml TARGET XML_ROOT_DIR ONLY_LIBXML)
         ${LIBXML2_SOURCES_DIR}/hash.c
         ${LIBXML2_SOURCES_DIR}/HTMLparser.c
         ${LIBXML2_SOURCES_DIR}/HTMLtree.c
-        ${LIBXML2_SOURCES_DIR}/legacy.c
         ${LIBXML2_SOURCES_DIR}/list.c
-        ${LIBXML2_SOURCES_DIR}/nanoftp.c
-        ${LIBXML2_SOURCES_DIR}/nanohttp.c
         ${LIBXML2_SOURCES_DIR}/parserInternals.c
         ${LIBXML2_SOURCES_DIR}/pattern.c
         ${LIBXML2_SOURCES_DIR}/relaxng.c
-        ${LIBXML2_SOURCES_DIR}/SAX.c
         ${LIBXML2_SOURCES_DIR}/SAX2.c
         ${LIBXML2_SOURCES_DIR}/schematron.c
         ${LIBXML2_SOURCES_DIR}/threads.c
@@ -45,7 +40,6 @@ function(add_libxml TARGET XML_ROOT_DIR ONLY_LIBXML)
         ${LIBXML2_SOURCES_DIR}/xmlschemas.c
         ${LIBXML2_SOURCES_DIR}/xmlschemastypes.c
         ${LIBXML2_SOURCES_DIR}/xmlstring.c
-        ${LIBXML2_SOURCES_DIR}/xmlunicode.c
         ${LIBXML2_SOURCES_DIR}/xmlwriter.c
         ${LIBXML2_SOURCES_DIR}/xpath.c
         ${LIBXML2_SOURCES_DIR}/xpointer.c

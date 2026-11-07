@@ -54,7 +54,7 @@ ZOBJS  = adler32$(O) crc32$(O) \
 PNGSRCS=png$(C) pngerror$(C) pngget$(C) pngmem$(C) \
 	pngread$(C) pngrio$(C) pngrtran$(C) pngrutil$(C) \
 	pngset$(C) pngtrans$(C)
-	
+
 # Standard headers
 PNGH   =png.h pngconf.h pngdebug.h pnginfo.h pngpriv.h pngstruct.h
 
@@ -82,7 +82,7 @@ OBJS    = $(PROGOBJS) $(PNGOBJS) $(ZOBJS)
 
 # note: dependencies do not work on implicit rule lines
 .c$(O):
-	$(CC) $(CPPFLAGS) -c $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
 # dependencies
 
@@ -100,12 +100,12 @@ $(PNGCONF): $(PNGSRC)/scripts/pnglibconf.mak $(ZH)\
 	$(PNGSRC)/scripts/pnglibconf.dfa \
 	$(PNGSRC)/scripts/options.awk pngusr.h pngusr.dfa
 	$(RM) pnglibconf.h pnglibconf.dfn
-	$(MAKE) $(MAKEFLAGS) -f $(PNGSRC)/scripts/pnglibconf.mak\
+	$(MAKE) -f $(PNGSRC)/scripts/pnglibconf.mak $(MAKEFLAGS)\
 	    srcdir=$(PNGSRC) CPPFLAGS="-DPNG_USER_CONFIG -I."\
 	    DFA_XTRA="pngusr.dfa" $@
 
 clean:
-	$(MAKE) $(MAKEFLAGS) -f $(PNGSRC)/scripts/pnglibconf.mak\
+	$(MAKE) -f $(PNGSRC)/scripts/pnglibconf.mak $(MAKEFLAGS)\
 	    srcdir=$(PNGSRC) clean
 	$(RM) pngm2pnm$(O)
 	$(RM) pngm2pnm$(E)

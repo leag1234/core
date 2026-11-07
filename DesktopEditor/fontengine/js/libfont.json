@@ -88,7 +88,6 @@
 		"./../../../OfficeUtils/src",
 		"./../../../OfficeUtils/src/zlib-1.2.11",
 
-		"./../../cximage/jasper/include", 
 		"./../../cximage/jpeg", 
 		"./../../cximage/png", 
 		"./../../agg-2.4/include"
@@ -137,7 +136,7 @@
 			"lzw/ftlzw.c",
 			"base/ftstroke.c",
 			"base/ftsystem.c",
-			"smooth/smooth.cpp",
+			"smooth/smooth.c",
 			"base/ftbbox.c",
 			"base/ftbdf.c",
 			"base/ftcid.c",
@@ -155,7 +154,7 @@
 			"pshinter/pshinter.c",
 			"psnames/psmodule.c",
 			"raster/raster.c",
-			"sfnt/sfnt.cpp",
+			"sfnt/sfnt.c",
 			"truetype/truetype.c",
 			"type1/type1.c",
 			"cid/type1cid.c",
@@ -280,8 +279,7 @@
 		"files": ["pro_Fonts_empty.cpp", "pro_Graphics_empty.cpp", "raster.cpp"]
 	},
 	{
-		"folder": "../../cximage/CxImage/",
-		"files": ["ximaenc.cpp", "ximaexif.cpp", "ximage.cpp", "ximainfo.cpp", "ximajpg.cpp", "ximalpha.cpp", "ximapal.cpp", "ximasel.cpp", "xmemfile.cpp", "ximapng.cpp", "ximabmp.cpp", "ximatran.cpp", "ximatif.cpp", "tif_xfile.cpp", "ximajas.cpp", "ximagif.cpp", "ximaico.cpp", "ximatga.cpp", "ximapcx.cpp", "ximawbmp.cpp", "ximamng.cpp", "ximapsd.cpp", "ximaska.cpp", "ximaraw.cpp"]
+		"folder": "../../cximage/CxImage/"
 	},
 	{
 		"folder": "../../cximage/jpeg/",
@@ -289,11 +287,11 @@
 	},
 	{
 		"folder": "../../cximage/png/",
-		"files": ["pngread.c", "pngmem.c", "pngerror.c", "png.c", "pngrio.c", "pngtrans.c", "pngget.c", "pngrutil.c", "pngrtran.c", "pngset.c", "pngwrite.c", "pngwio.c", "pngwutil.c", "pngwtran.c"]
+		"files": ["pngread.c", "pngmem.c", "pngerror.c", "png.c", "pngrio.c", "pngtrans.c", "pngget.c", "pngrutil.c", "pngrtran.c", "pngset.c", "pngwrite.c", "pngwio.c", "pngwutil.c", "pngwtran.c", "pngpread.c"]
 	},
 	{
 		"folder": "../../cximage/tiff/",
-		"files": ["tif_close.c", "tif_dir.c", "tif_aux.c", "tif_getimage.c", "tif_strip.c", "tif_open.c", "tif_tile.c", "tif_error.c", "tif_read.c", "tif_flush.c", "tif_dirinfo.c", "tif_compress.c", "tif_warning.c", "tif_swab.c", "tif_color.c", "tif_dirread.c", "tif_write.c", "tif_codec.c", "tif_luv.c", "tif_dirwrite.c", "tif_dumpmode.c", "tif_fax3.c", "tif_ojpeg.c", "tif_jpeg.c", "tif_next.c", "tif_thunder.c", "tif_packbits.c", "tif_lzw.c", "tif_zip.c", "tif_fax3sm.c", "tif_predict.c"]
+		"files": ["tif_close.c", "tif_dir.c", "tif_aux.c", "tif_getimage.c", "tif_strip.c", "tif_open.c", "tif_tile.c", "tif_error.c", "tif_read.c", "tif_flush.c", "tif_dirinfo.c", "tif_compress.c", "tif_warning.c", "tif_swab.c", "tif_color.c", "tif_dirread.c", "tif_write.c", "tif_codec.c", "tif_luv.c", "tif_dirwrite.c", "tif_dumpmode.c", "tif_fax3.c", "tif_ojpeg.c", "tif_jpeg.c", "tif_next.c", "tif_thunder.c", "tif_packbits.c", "tif_lzw.c", "tif_zip.c", "tif_fax3sm.c", "tif_predict.c", "tif_hash_set.c", "tif_unix.c"]
 	},	
 	{
 		"folder": "../../raster/Metafile/",

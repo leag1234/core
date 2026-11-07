@@ -1,81 +1,54 @@
-﻿
-/* Define to 1 if you have the <assert.h> header file. */
+#ifndef TIFF_CONFIG_H
+#define TIFF_CONFIG_H
+
+#include "tiffconf.h"
+
+#define CCITT_SUPPORT 1
+#define CHECK_JPEG_YCBCR_SUBSAMPLING 1
+#define CHUNKY_STRIP_READ_SUPPORT 1
+#define CXX_SUPPORT 1
+#define DEFER_STRILE_LOAD 1
 #define HAVE_ASSERT_H 1
-
-/* Define to 1 if you have the <fcntl.h> header file. */
-#define HAVE_FCNTL_H 1
-
-/* Define as 0 or 1 according to the floating point format suported by the
-   machine */
-#define HAVE_IEEEFP 1
-
-/* Define to 1 if you have the `jbg_newlen' function. */
+#define HAVE_DECL_OPTARG 0
 #define HAVE_JBG_NEWLEN 1
-
-/* Define to 1 if you have the <string.h> header file. */
+#define HAVE_SNPRINTF 1
 #define HAVE_STRING_H 1
 
-/* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
-
-/* Define to 1 if you have the <io.h> header file. */
-#ifndef _LINUX
+#if defined(_WIN32) || defined(_WIN64)
 #define HAVE_IO_H 1
-#endif
-
-/* Define to 1 if you have the <search.h> header file. */
-#define HAVE_SEARCH_H 1
-
-/* Define to 1 if you have the `setmode' function. */
 #define HAVE_SETMODE 1
-
-/* The size of a `int', as computed by sizeof. */
-#define SIZEOF_INT 4
-
-/* The size of a `long', as computed by sizeof. */
-#define SIZEOF_LONG 4
-
-#ifndef _LINUX
-/* Signed 64-bit type */
-#define TIFF_INT64_T signed __int64
-
-/* Unsigned 64-bit type */
-#define TIFF_UINT64_T unsigned __int64
+#else
+#define HAVE_FCNTL_H 1
+#define HAVE_FSEEKO 1
+#define HAVE_STRINGS_H 1
+#define HAVE_SYS_STAT_H 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_UNISTD_H 1
 #endif
 
-#ifdef _LINUX
-#include <inttypes.h>
+#define STRIP_SIZE_DEFAULT 8192
+#define TIFF_MAX_DIR_COUNT 1048576
+#define WORDS_BIGENDIAN 0
 
-/* Signed 64-bit type */
-#define TIFF_INT64_T int64_t
-
-/* Unsigned 64-bit type */
-#define TIFF_UINT64_T uint64_t
+#if defined(_MSC_VER) && !defined(__clang__)
+#if SIZEOF_SIZE_T == 8
+#define TIFF_SIZE_FORMAT "I64u"
+#else
+#define TIFF_SIZE_FORMAT "u"
+#endif
+#elif defined(__MINGW32__)
+#if SIZEOF_SIZE_T == 8
+#define TIFF_SIZE_FORMAT PRIu64
+#else
+#define TIFF_SIZE_FORMAT PRIu32
+#endif
+#else
+#define TIFF_SIZE_FORMAT "zu"
+#endif
+#if SIZEOF_SIZE_T == 8
+#define TIFF_SSIZE_FORMAT PRId64
+#else
+#define TIFF_SSIZE_FORMAT PRId32
 #endif
 
-
-/* Set the native cpu bit order */
-#define HOST_FILLORDER FILLORDER_LSB2MSB
-
-/* Define to 1 if your processor stores words with the most significant byte
-   first (like Motorola and SPARC, unlike Intel and VAX). */
-/* #undef WORDS_BIGENDIAN */
-
-/* Define to `__inline__' or `__inline' if that's what the C compiler
-   calls it, or to nothing if 'inline' is not supported under any name.  */
-//#ifndef __cplusplus
-//# ifndef inline
-//#  define inline __inline
-//# endif
-//#endif
-
-#ifdef _MSC_VER
-#define lfind _lfind
 #endif
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */

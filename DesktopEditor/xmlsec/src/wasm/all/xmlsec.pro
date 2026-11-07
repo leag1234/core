@@ -37,8 +37,44 @@ INCLUDEPATH += \
     $$CORE_ROOT_DIR/DesktopEditor/xml/build/qt
 
 SOURCES += \
-    $$CORE_ROOT_DIR/DesktopEditor/xml/build/qt/libxml2_all.c \
-    $$CORE_ROOT_DIR/DesktopEditor/xml/build/qt/libxml2_all2.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/buf.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/c14n.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/catalog.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/chvalid.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/debugXML.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/dict.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/encoding.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/entities.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/error.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/globals.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/hash.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/HTMLparser.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/HTMLtree.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/list.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/parser.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/parserInternals.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/pattern.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/relaxng.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/SAX2.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/schematron.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/threads.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/tree.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/uri.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/valid.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xinclude.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xlink.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlIO.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlmemory.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlmodule.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlreader.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlregexp.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlsave.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlschemas.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlschemastypes.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlstring.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xmlwriter.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xpath.c \
+    $$CORE_ROOT_DIR/DesktopEditor/xml/libxml2/xpointer.c \
     $$CORE_ROOT_DIR/DesktopEditor/xml/src/xmllight.cpp \
     $$CORE_ROOT_DIR/DesktopEditor/xml/src/xmldom.cpp
 

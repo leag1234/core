@@ -4,6 +4,7 @@
 #include "dwt.c"
 #include "event.c"
 #include "function_list.c"
+#include "ht_dec.c"
 #include "image.c"
 #include "invert.c"
 #include "j2k.c"

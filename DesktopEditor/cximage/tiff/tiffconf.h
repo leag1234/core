@@ -1,119 +1,62 @@
-﻿/*
-  Configuration defines for installed libtiff.
-  This file maintained for backward compatibility. Do not use definitions
-  from this file in your programs.
-*/
-
 #ifndef _TIFFCONF_
 #define _TIFFCONF_
 
-/* Define to 1 if the system has the type `int16'. */
-/* #undef HAVE_INT16 */
-
-/* Define to 1 if the system has the type `int32'. */
-/* #undef HAVE_INT32 */
-
-/* Define to 1 if the system has the type `int8'. */
-/* #undef HAVE_INT8 */
-
-/* The size of a `int', as computed by sizeof. */
-#define SIZEOF_INT 4
-
-/* The size of a `long', as computed by sizeof. */
-#define SIZEOF_LONG 4
-
-/* Signed 64-bit type formatter */
-#define TIFF_INT64_FORMAT "%lld"
-
-#ifndef _LINUX
-/* Signed 64-bit type */
-#define TIFF_INT64_T signed __int64
-
-/* Unsigned 64-bit type */
-#define TIFF_UINT64_T unsigned __int64
-#endif
-
-#ifdef _LINUX
+#include <stddef.h>
+#include <stdint.h>
 #include <inttypes.h>
 
-/* Signed 64-bit type */
-#define TIFF_INT64_T int64_t
-
-/* Unsigned 64-bit type */
-#define TIFF_UINT64_T uint64_t
+#if defined(__SIZEOF_SIZE_T__)
+#define SIZEOF_SIZE_T __SIZEOF_SIZE_T__
+#elif defined(__SIZEOF_POINTER__)
+#define SIZEOF_SIZE_T __SIZEOF_POINTER__
+#elif defined(_MSC_VER)
+#if defined(_WIN64)
+#define SIZEOF_SIZE_T 8
+#elif defined(_WIN32)
+#define SIZEOF_SIZE_T 4
+#endif
 #endif
 
-/* Unsigned 64-bit type formatter */
-#define TIFF_UINT64_FORMAT "%I64u"
+#if !defined(SIZEOF_SIZE_T)
+#error "Unable to determine the size of size_t"
+#elif SIZEOF_SIZE_T == 8
+#define TIFF_SSIZE_T int64_t
+#elif SIZEOF_SIZE_T == 4
+#define TIFF_SSIZE_T int32_t
+#else
+#error "Unsupported size of size_t"
+#endif
 
-/* Compatibility stuff. */
+#define TIFF_INT8_T int8_t
+#define TIFF_UINT8_T uint8_t
+#define TIFF_INT16_T int16_t
+#define TIFF_UINT16_T uint16_t
+#define TIFF_INT32_T int32_t
+#define TIFF_UINT32_T uint32_t
+#define TIFF_INT64_T int64_t
+#define TIFF_UINT64_T uint64_t
 
-/* Define as 0 or 1 according to the floating point format suported by the
-   machine */
 #define HAVE_IEEEFP 1
-
-/* Set the native cpu bit order (FILLORDER_LSB2MSB or FILLORDER_MSB2LSB) */
 #define HOST_FILLORDER FILLORDER_LSB2MSB
-
-/* Native cpu byte order: 1 if big-endian (Motorola) or 0 if little-endian
-   (Intel) */
 #define HOST_BIGENDIAN 0
 
-/* Support CCITT Group 3 & 4 algorithms */
 #define CCITT_SUPPORT 1
-
-/* Support JPEG compression (requires IJG JPEG library) */
-/* #undef JPEG_SUPPORT */
 #define JPEG_SUPPORT 1
-
-/* Support LogLuv high dynamic range encoding */
+/* #undef JBIG_SUPPORT: not built, as in the previous libtiff 3.9 configuration */
 #define LOGLUV_SUPPORT 1
-
-/* Support LZW algorithm */
 #define LZW_SUPPORT 1
-
-/* Support NeXT 2-bit RLE algorithm */
 #define NEXT_SUPPORT 1
-
-/* Support Old JPEG compresson (read contrib/ojpeg/README first! Compilation
-   fails with unpatched IJG JPEG library) */
-/* #undef OJPEG_SUPPORT */
 #define OJPEG_SUPPORT 1
-
-/* Support Macintosh PackBits algorithm */
 #define PACKBITS_SUPPORT 1
-
-/* Support Pixar log-format algorithm (requires Zlib) */
-/* #undef PIXARLOG_SUPPORT */
-
-/* Support ThunderScan 4-bit RLE algorithm */
+/* #undef PIXARLOG_SUPPORT: not built, as in the previous libtiff 3.9 configuration */
 #define THUNDER_SUPPORT 1
-
-/* Support Deflate compression */
-/* #undef ZIP_SUPPORT */
 #define ZIP_SUPPORT 1
-
-/* Support strip chopping (whether or not to convert single-strip uncompressed
-   images to mutiple strips of ~8Kb to reduce memory usage) */
 #define STRIPCHOP_DEFAULT TIFF_STRIPCHOP
-
-/* Enable SubIFD tag (330) support */
 #define SUBIFD_SUPPORT 1
-
-/* Treat extra sample as alpha (default enabled). The RGBA interface will
-   treat a fourth sample with no EXTRASAMPLE_ value as being ASSOCALPHA. Many
-   packages produce RGBA files but don't mark the alpha properly. */
 #define DEFAULT_EXTRASAMPLE_AS_ALPHA 1
-
-/* Pick up YCbCr subsampling info from the JPEG data stream to support files
-   lacking the tag (default enabled). */
 #define CHECK_JPEG_YCBCR_SUBSAMPLING 1
+#define MDI_SUPPORT 1
 
-/*
- * Feature support definitions.
- * XXX: These macros are obsoleted. Don't use them in your apps!
- * Macros stays here for backward compatibility and should be always defined.
- */
 #define COLORIMETRY_SUPPORT
 #define YCBCR_SUPPORT
 #define CMYK_SUPPORT
@@ -121,11 +64,4 @@
 #define PHOTOSHOP_SUPPORT
 #define IPTC_SUPPORT
 
-#endif /* _TIFFCONF_ */
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */
+#endif

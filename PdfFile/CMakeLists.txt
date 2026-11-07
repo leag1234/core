@@ -377,6 +377,7 @@ add_library(PdfFile SHARED
     ${OPENJPEG_LIB_JP2}/pi.c
     ${OPENJPEG_LIB_JP2}/ppix_manager.c
     ${OPENJPEG_LIB_JP2}/sparse_array.c
+    ${OPENJPEG_LIB_JP2}/ht_dec.c
     # ${OPENJPEG_LIB_JP2}/t1_generate_luts.c
     ${OPENJPEG_LIB_JP2}/t1.c
     ${OPENJPEG_LIB_JP2}/t2.c
@@ -410,9 +411,7 @@ add_library(PdfFile SHARED
     ${OPENJPEG_LIB_JP2}/opj_common.h
     ${OPENJPEG_LIB_JP2}/opj_includes.h
     ${OPENJPEG_LIB_JP2}/opj_intmath.h
-    ${OPENJPEG_LIB_JP2}/opj_inttypes.h
     ${OPENJPEG_LIB_JP2}/opj_malloc.h
-    ${OPENJPEG_LIB_JP2}/opj_stdint.h
     ${OPENJPEG_LIB_JP2}/pi.h
     ${OPENJPEG_LIB_JP2}/sparse_array.h
     ${OPENJPEG_LIB_JP2}/t1_luts.h
@@ -604,4 +603,3 @@ target_link_libraries(PdfFile PUBLIC
 copy_artifacts_to_folder("PdfFile" "${EO_CORE_OUTPUT_DIR}")
 
 declare_victory( PdfFile )
-

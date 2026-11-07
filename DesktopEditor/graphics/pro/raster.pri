@@ -37,7 +37,6 @@ core_android {
 }
 
 INCLUDEPATH += \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/include \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/jpeg \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/png
 
@@ -162,6 +161,7 @@ SOURCES += \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/png/pngwutil.c \
 	\
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_stream.cxx \
+	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_hash_set.c \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_aux.c \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_close.c \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_codec.c \
@@ -194,7 +194,6 @@ SOURCES += \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_swab.c \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_thunder.c \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_tile.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_unix.c \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_version.c \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_warning.c \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/tiff/tif_write.c \
@@ -211,7 +210,6 @@ SOURCES += \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/CxImage/ximaico.cpp \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/CxImage/ximainfo.cpp \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/CxImage/ximaint.cpp \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/CxImage/ximajas.cpp \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/CxImage/ximajbg.cpp \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/CxImage/ximajpg.cpp \
 	$$LIB_GRAPHICS_PRI_PATH/cximage/CxImage/ximalpha.cpp \
@@ -295,57 +293,7 @@ support_heif {
 }
 
 SOURCES += \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_cm.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_debug.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_getopt.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_icc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_iccdata.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_image.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_init.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_malloc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_stream.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_seq.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_string.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_tvp.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/base/jas_version.c \
 	\
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/bmp/bmp_cod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/bmp/bmp_dec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/bmp/bmp_enc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jp2/jp2_cod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jp2/jp2_dec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jp2/jp2_enc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_bs.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_cs.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_dec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_enc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_math.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_mct.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_mqcod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_mqdec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_mqenc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_qmfb.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_t1cod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_t1dec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_t1enc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_t2cod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_t2dec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_t2enc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_tagtree.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_tsfb.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpc/jpc_util.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpg/jpg_dummy.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/jpg/jpg_val.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/mif/mif_cod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/pgx/pgx_cod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/pgx/pgx_dec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/pgx/pgx_enc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/pnm/pnm_cod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/pnm/pnm_dec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/pnm/pnm_enc.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/ras/ras_cod.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/ras/ras_dec.c \
-	$$LIB_GRAPHICS_PRI_PATH/cximage/jasper/ras/ras_enc.c
 }
 
 disable_cximage_mng:DEFINES += CXIMAGE_DISABLE_SUPPORT_MNG

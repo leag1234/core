@@ -27,7 +27,7 @@ def fetch_and_patch():
     nc.run_command(
         [   "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf",
             "clone", "--depth", "1",
-            "--branch", "openssl-4.0.1",
+            "--branch", "openssl-4.0.3",
             "https://github.com/openssl/openssl.git",
             str(nc.work_dir)
         ],

@@ -45,28 +45,11 @@ if not base.is_dir("emsdk"):
 
 if not base.is_dir("xml"):
   base.copy_dir("../../../xml", "./xml")
-  base.replaceInFile("./xml/libxml2/libxml.h", "xmlNop(void)", "xmlNop(void* context, char* buffer, int len)")
-  base.replaceInFile("./xml/libxml2/xmlIO.c", "xmlNop(void)", "xmlNop(void* context, char* buffer, int len)")
   base.replaceInFile("./xml/src/xmllight_private.h", "#include \"../../common/", "#include \"../../../../../common/")
   base.replaceInFile("./xml/include/xmlutils.h", "#include \"../../common/", "#include \"../../../../../common/")
   
 if not base.is_dir("freetype-2.10.4"):
   base.copy_dir("../../../freetype-2.10.4", "./freetype-2.10.4")
-  # smooth
-  base.copy_file("./freetype-2.10.4/src/smooth/ftgrays.c", "./freetype-2.10.4/src/smooth/ftgrays.cpp");
-  apply_patch("./freetype-2.10.4/src/smooth/ftgrays.cpp", "./wasm/patches/ftgrays1.patch")
-  apply_patch("./freetype-2.10.4/src/smooth/ftgrays.cpp", "./wasm/patches/ftgrays2.patch")
-  apply_patch("./freetype-2.10.4/src/smooth/ftgrays.cpp", "./wasm/patches/ftgrays3.patch")
-  base.copy_file("./freetype-2.10.4/src/smooth/smooth.c", "./freetype-2.10.4/src/smooth/smooth.cpp");
-  apply_patch("./freetype-2.10.4/src/smooth/smooth.cpp", "./wasm/patches/smooth.patch")
-  # ftobjs
-  apply_patch("./freetype-2.10.4/src/base/ftobjs.c", "./wasm/patches/ftobjs1.patch")
-  apply_patch("./freetype-2.10.4/src/base/ftobjs.c", "./wasm/patches/ftobjs2.patch")
-  # ttcmap
-  base.copy_file("./freetype-2.10.4/src/sfnt/ttcmap.c", "./freetype-2.10.4/src/sfnt/ttcmap.cpp");
-  apply_patch("./freetype-2.10.4/src/sfnt/ttcmap.cpp", "./wasm/patches/ttcmap.patch")
-  base.copy_file("./freetype-2.10.4/src/sfnt/sfnt.c", "./freetype-2.10.4/src/sfnt/sfnt.cpp");
-  apply_patch("./freetype-2.10.4/src/sfnt/sfnt.cpp", "./wasm/patches/sfnt.patch")
 
 # compile
 compiler_flags = ["-O3",
@@ -103,7 +86,7 @@ compile_files_array.append(["wasm/src/lib/wasm_jmp.cpp"])
 
 compile_files_array.append("f")
 compile_files_array.append("freetype-2.10.4/src/")
-compile_files_array.append(["base/ftdebug.c","autofit/autofit.c","bdf/bdf.c","cff/cff.c","base/ftbase.c","base/ftbitmap.c","base/ftfstype.c","base/ftgasp.c","cache/ftcache.c","base/ftglyph.c","gzip/ftgzip.c","base/ftinit.c","lzw/ftlzw.c","base/ftstroke.c","base/ftsystem.c","smooth/smooth.cpp","base/ftbbox.c","base/ftbdf.c","base/ftcid.c","base/ftmm.c","base/ftpfr.c","base/ftsynth.c","base/fttype1.c","base/ftwinfnt.c","base/ftgxval.c","base/ftotval.c","base/ftpatent.c","pcf/pcf.c","pfr/pfr.c","psaux/psaux.c","pshinter/pshinter.c","psnames/psmodule.c","raster/raster.c","sfnt/sfnt.cpp","truetype/truetype.c","type1/type1.c","cid/type1cid.c","type42/type42.c","winfonts/winfnt.c"])
+compile_files_array.append(["base/ftdebug.c","autofit/autofit.c","bdf/bdf.c","cff/cff.c","base/ftbase.c","base/ftbitmap.c","base/ftfstype.c","base/ftgasp.c","cache/ftcache.c","base/ftglyph.c","gzip/ftgzip.c","base/ftinit.c","lzw/ftlzw.c","base/ftstroke.c","base/ftsystem.c","smooth/smooth.c","base/ftbbox.c","base/ftbdf.c","base/ftcid.c","base/ftmm.c","base/ftpfr.c","base/ftsynth.c","base/fttype1.c","base/ftwinfnt.c","base/ftgxval.c","base/ftotval.c","base/ftpatent.c","pcf/pcf.c","pfr/pfr.c","psaux/psaux.c","pshinter/pshinter.c","psnames/psmodule.c","raster/raster.c","sfnt/sfnt.c","truetype/truetype.c","type1/type1.c","cid/type1cid.c","type42/type42.c","winfonts/winfnt.c"])
 
 compile_files_array.append("g")
 compile_files_array.append("../../")
@@ -139,7 +122,7 @@ compile_files_array.append(["adler32.c", "crc32.c", "deflate.c", "infback.c", "i
 
 compile_files_array.append("x")
 compile_files_array.append("./")
-compile_files_array.append(["xml/src/xmllight.cpp", "xml/src/xmldom.cpp", "xml/build/qt/libxml2_all.c", "xml/build/qt/libxml2_all2.c"])
+compile_files_array.append(["xml/src/xmllight.cpp", "xml/src/xmldom.cpp", "xml/libxml2/buf.c", "xml/libxml2/c14n.c", "xml/libxml2/catalog.c", "xml/libxml2/chvalid.c", "xml/libxml2/debugXML.c", "xml/libxml2/dict.c", "xml/libxml2/encoding.c", "xml/libxml2/entities.c", "xml/libxml2/error.c", "xml/libxml2/globals.c", "xml/libxml2/hash.c", "xml/libxml2/HTMLparser.c", "xml/libxml2/HTMLtree.c", "xml/libxml2/list.c", "xml/libxml2/parser.c", "xml/libxml2/parserInternals.c", "xml/libxml2/pattern.c", "xml/libxml2/relaxng.c", "xml/libxml2/SAX2.c", "xml/libxml2/schematron.c", "xml/libxml2/threads.c", "xml/libxml2/tree.c", "xml/libxml2/uri.c", "xml/libxml2/valid.c", "xml/libxml2/xinclude.c", "xml/libxml2/xlink.c", "xml/libxml2/xmlIO.c", "xml/libxml2/xmlmemory.c", "xml/libxml2/xmlmodule.c", "xml/libxml2/xmlreader.c", "xml/libxml2/xmlregexp.c", "xml/libxml2/xmlsave.c", "xml/libxml2/xmlschemas.c", "xml/libxml2/xmlschemastypes.c", "xml/libxml2/xmlstring.c", "xml/libxml2/xmlwriter.c", "xml/libxml2/xpath.c", "xml/libxml2/xpointer.c"])
 
 compile_files_array.append("p")
 compile_files_array.append("../../../../PdfReader/")

@@ -151,7 +151,6 @@
     <ClCompile Include="..\..\libxml2\chvalid.c" />
     <ClCompile Include="..\..\libxml2\debugXML.c" />
     <ClCompile Include="..\..\libxml2\dict.c" />
-    <ClCompile Include="..\..\libxml2\DOCBparser.c" />
     <ClCompile Include="..\..\libxml2\encoding.c" />
     <ClCompile Include="..\..\libxml2\entities.c" />
     <ClCompile Include="..\..\libxml2\error.c" />
@@ -159,15 +158,11 @@
     <ClCompile Include="..\..\libxml2\hash.c" />
     <ClCompile Include="..\..\libxml2\HTMLparser.c" />
     <ClCompile Include="..\..\libxml2\HTMLtree.c" />
-    <ClCompile Include="..\..\libxml2\legacy.c" />
     <ClCompile Include="..\..\libxml2\list.c" />
-    <ClCompile Include="..\..\libxml2\nanoftp.c" />
-    <ClCompile Include="..\..\libxml2\nanohttp.c" />
     <ClCompile Include="..\..\libxml2\parser.c" />
     <ClCompile Include="..\..\libxml2\parserInternals.c" />
     <ClCompile Include="..\..\libxml2\pattern.c" />
     <ClCompile Include="..\..\libxml2\relaxng.c" />
-    <ClCompile Include="..\..\libxml2\SAX.c" />
     <ClCompile Include="..\..\libxml2\SAX2.c" />
     <ClCompile Include="..\..\libxml2\schematron.c" />
     <ClCompile Include="..\..\libxml2\threads.c" />
@@ -186,7 +181,6 @@
     <ClCompile Include="..\..\libxml2\xmlschemas.c" />
     <ClCompile Include="..\..\libxml2\xmlschemastypes.c" />
     <ClCompile Include="..\..\libxml2\xmlstring.c" />
-    <ClCompile Include="..\..\libxml2\xmlunicode.c" />
     <ClCompile Include="..\..\libxml2\xmlwriter.c" />
     <ClCompile Include="..\..\libxml2\xpath.c" />
     <ClCompile Include="..\..\libxml2\xpointer.c" />

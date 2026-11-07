@@ -25,12 +25,8 @@ extern "C" {
 #ifdef _LINUX
  #undef _DLL
  #include <png.h>
- #include <pngstruct.h>
- #include <pnginfo.h>
 #else
  #include "../png/png.h"
- #include "../png/pngstruct.h"
- #include "../png/pnginfo.h"
 #endif
 }
 
@@ -82,10 +78,10 @@ protected:
 		if (hFile == NULL || !hFile->Flush()) png_error(png_ptr, "Flush Error");
 	}
 
-    static void PNGAPI user_error_fn(png_structp png_ptr,png_const_charp error_msg)
+	static void PNGAPI user_error_fn(png_structp png_ptr,png_const_charp error_msg)
 	{
-		strncpy((char*)png_ptr->error_ptr,error_msg,255);
-		longjmp(png_ptr->longjmp_buffer, 1);
+		strncpy((char*)png_get_error_ptr(png_ptr),error_msg,255);
+		longjmp(png_jmpbuf(png_ptr), 1);
 	}
 };
 

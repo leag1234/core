@@ -67,6 +67,19 @@ void WriteBaseHtmlStyles(NSFile::CFileBinary& oFile)
 	oFile.WriteStringUTF8(L"</style>");
 }
 
+void ReplaceAll(std::string& sValue, const std::string& sFrom, const std::string& sTo)
+{
+	for (size_t pos = sValue.find(sFrom); pos != std::string::npos; pos = sValue.find(sFrom, pos + sTo.length()))
+		sValue.replace(pos, sFrom.length(), sTo);
+}
+
+void ReplaceTaskCheckboxes(std::string& sHtml)
+{
+	const std::string sBox = "<input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled";
+	ReplaceAll(sHtml, sBox + " checked>", "\xE2\x98\x91 "); // U+2611
+	ReplaceAll(sHtml, sBox + ">", "\xE2\x98\x90 ");          // U+2610
+}
+
 bool ConvertMdFileToHtml(const std::wstring& wsPathToMdFile, const std::wstring& wsPathToHtmlFile)
 {
 	std::string sMdData;
@@ -91,8 +104,13 @@ bool ConvertMdFileToHtml(const std::wstring& wsPathToMdFile, const std::wstring&
 
 	bool bResult = true;
 
-	if (0 != md_html(sMdData.c_str(), sMdData.length(), ToHtmlFile, &oFile, MD_PARSER_FLAGS, MD_RENDERER_FLAGS))
+	std::string sHtml;
+	if (0 != md_html(sMdData.c_str(), sMdData.length(), ToHtml, &sHtml, MD_PARSER_FLAGS, MD_RENDERER_FLAGS))
 		bResult = false;
+
+	// The HTML import ignores <input>, so task list boxes would disappear: write them as ballot box characters.
+	ReplaceTaskCheckboxes(sHtml);
+	oFile.WriteFile((const BYTE*)sHtml.c_str(), (DWORD)sHtml.length());
 
 	oFile.WriteStringUTF8(L"</body></html>");
 

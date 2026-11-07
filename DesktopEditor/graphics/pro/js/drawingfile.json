@@ -68,7 +68,6 @@
 	"include_path": [
 		"wasm/src/lib", 
 		"../../../agg-2.4/include", 
-		"../../../cximage/jasper/include", "../../../cximage/jpeg", "../../../cximage/png", 
 		"freetype-2.10.4/include", "freetype-2.10.4/include/freetype", 		
 		"../../../../OfficeUtils/src/zlib-1.2.11", "../../../../OfficeUtils/src/zlib-1.2.11/contrib/minizip", "../../../../OfficeUtils/src", 
 		"../../../../Common/3dParty/icu/icu/source/common", 
@@ -104,8 +103,7 @@
 		"files": ["BgraFrame.cpp", "ImageFileFormatChecker.cpp", "PICT/PICFile.cpp"]
 	},
 	{
-		"folder": "../../../cximage/CxImage/",
-		"files": ["ximaenc.cpp", "ximaexif.cpp", "ximage.cpp", "ximainfo.cpp", "ximajpg.cpp", "ximalpha.cpp", "ximapal.cpp", "ximasel.cpp", "xmemfile.cpp", "ximapng.cpp", "ximabmp.cpp", "ximatran.cpp", "ximatif.cpp", "tif_xfile.cpp", "ximajas.cpp", "ximagif.cpp", "ximaico.cpp", "ximatga.cpp", "ximapcx.cpp", "ximawbmp.cpp", "ximamng.cpp", "ximapsd.cpp", "ximaska.cpp", "ximaraw.cpp", "ximaint.cpp"]
+		"folder": "../../../cximage/CxImage/"
 	},
 	{
 		"folder": "../../../cximage/jpeg/",
@@ -113,14 +111,13 @@
 	},
 	{
 		"folder": "../../../cximage/png/",
-		"files": ["pngread.c", "pngmem.c", "pngerror.c", "png.c", "pngrio.c", "pngtrans.c", "pngget.c", "pngrutil.c", "pngrtran.c", "pngset.c", "pngwrite.c", "pngwio.c", "pngwutil.c", "pngwtran.c"]
+		"files": ["pngread.c", "pngmem.c", "pngerror.c", "png.c", "pngrio.c", "pngtrans.c", "pngget.c", "pngrutil.c", "pngrtran.c", "pngset.c", "pngwrite.c", "pngwio.c", "pngwutil.c", "pngwtran.c", "pngpread.c"]
 	},
 	{
 		"folder": "../../../cximage/tiff/",
-		"files": ["tif_close.c", "tif_dir.c", "tif_aux.c", "tif_getimage.c", "tif_strip.c", "tif_open.c", "tif_tile.c", "tif_error.c", "tif_read.c", "tif_flush.c", "tif_dirinfo.c", "tif_compress.c", "tif_warning.c", "tif_swab.c", "tif_color.c", "tif_dirread.c", "tif_write.c", "tif_codec.c", "tif_luv.c", "tif_dirwrite.c", "tif_dumpmode.c", "tif_fax3.c", "tif_ojpeg.c", "tif_jpeg.c", "tif_next.c", "tif_thunder.c", "tif_packbits.c", "tif_lzw.c", "tif_zip.c", "tif_fax3sm.c", "tif_predict.c"]
+		"files": ["tif_close.c", "tif_dir.c", "tif_aux.c", "tif_getimage.c", "tif_strip.c", "tif_open.c", "tif_tile.c", "tif_error.c", "tif_read.c", "tif_flush.c", "tif_dirinfo.c", "tif_compress.c", "tif_warning.c", "tif_swab.c", "tif_color.c", "tif_dirread.c", "tif_write.c", "tif_codec.c", "tif_luv.c", "tif_dirwrite.c", "tif_dumpmode.c", "tif_fax3.c", "tif_ojpeg.c", "tif_jpeg.c", "tif_next.c", "tif_thunder.c", "tif_packbits.c", "tif_lzw.c", "tif_zip.c", "tif_fax3sm.c", "tif_predict.c", "tif_hash_set.c", "tif_unix.c"]
 	},
 	{
-		"folder": "../../../cximage/jasper/",
 		"files": ["base/jas_init.c", "base/jas_stream.c", "base/jas_malloc.c", "base/jas_image.c", "base/jas_cm.c", "base/jas_seq.c", "base/jas_string.c", "base/jas_icc.c", "base/jas_debug.c", "base/jas_iccdata.c", "base/jas_tvp.c", "base/jas_version.c", "mif/mif_cod.c", "pnm/pnm_dec.c", "pnm/pnm_enc.c", "pnm/pnm_cod.c", "bmp/bmp_dec.c", "bmp/bmp_enc.c", "bmp/bmp_cod.c", "ras/ras_dec.c", "ras/ras_enc.c", "jp2/jp2_dec.c", "jp2/jp2_enc.c", "jp2/jp2_cod.c", "jpc/jpc_cs.c", "jpc/jpc_enc.c", "jpc/jpc_dec.c", "jpc/jpc_t1cod.c", "jpc/jpc_math.c", "jpc/jpc_util.c", "jpc/jpc_tsfb.c", "jpc/jpc_mct.c", "jpc/jpc_t1enc.c", "jpc/jpc_t1dec.c", "jpc/jpc_bs.c", "jpc/jpc_t2cod.c", "jpc/jpc_t2enc.c", "jpc/jpc_t2dec.c", "jpc/jpc_tagtree.c", "jpc/jpc_mqenc.c", "jpc/jpc_mqdec.c", "jpc/jpc_mqcod.c", "jpc/jpc_qmfb.c", "jpg/jpg_val.c", "jpg/jpg_dummy.c", "pgx/pgx_dec.c", "pgx/pgx_enc.c"]
 	},
 	{
@@ -149,7 +146,7 @@
 	},
 	{
 		"folder": "freetype-2.10.4/src/",
-		"files": ["base/ftdebug.c","autofit/autofit.c","bdf/bdf.c","cff/cff.c","base/ftbase.c","base/ftbitmap.c","base/ftfstype.c","base/ftgasp.c","cache/ftcache.c","base/ftglyph.c","gzip/ftgzip.c","base/ftinit.c","lzw/ftlzw.c","base/ftstroke.c","base/ftsystem.c","smooth/smooth.cpp","base/ftbbox.c","base/ftbdf.c","base/ftcid.c","base/ftmm.c","base/ftpfr.c","base/ftsynth.c","base/fttype1.c","base/ftwinfnt.c","base/ftgxval.c","base/ftotval.c","base/ftpatent.c","pcf/pcf.c","pfr/pfr.c","psaux/psaux.c","pshinter/pshinter.c","psnames/psmodule.c","raster/raster.c","sfnt/sfnt.cpp","truetype/truetype.c","type1/type1.c","cid/type1cid.c","type42/type42.c","winfonts/winfnt.c"]
+		"files": ["base/ftdebug.c","autofit/autofit.c","bdf/bdf.c","cff/cff.c","base/ftbase.c","base/ftbitmap.c","base/ftfstype.c","base/ftgasp.c","cache/ftcache.c","base/ftglyph.c","gzip/ftgzip.c","base/ftinit.c","lzw/ftlzw.c","base/ftstroke.c","base/ftsystem.c","smooth/smooth.c","base/ftbbox.c","base/ftbdf.c","base/ftcid.c","base/ftmm.c","base/ftpfr.c","base/ftsynth.c","base/fttype1.c","base/ftwinfnt.c","base/ftgxval.c","base/ftotval.c","base/ftpatent.c","pcf/pcf.c","pfr/pfr.c","psaux/psaux.c","pshinter/pshinter.c","psnames/psmodule.c","raster/raster.c","sfnt/sfnt.c","truetype/truetype.c","type1/type1.c","cid/type1cid.c","type42/type42.c","winfonts/winfnt.c"]
 	},
 	{
 		"folder": "../../",
@@ -189,7 +186,7 @@
 	},
 	{
 		"folder": "./",
-		"files": ["xml/src/xmllight.cpp", "xml/src/xmldom.cpp", "xml/build/qt/libxml2_all.c", "xml/build/qt/libxml2_all2.c"]
+		"files": ["xml/src/xmllight.cpp", "xml/src/xmldom.cpp", "xml/libxml2/buf.c", "xml/libxml2/c14n.c", "xml/libxml2/catalog.c", "xml/libxml2/chvalid.c", "xml/libxml2/debugXML.c", "xml/libxml2/dict.c", "xml/libxml2/encoding.c", "xml/libxml2/entities.c", "xml/libxml2/error.c", "xml/libxml2/globals.c", "xml/libxml2/hash.c", "xml/libxml2/HTMLparser.c", "xml/libxml2/HTMLtree.c", "xml/libxml2/list.c", "xml/libxml2/parser.c", "xml/libxml2/parserInternals.c", "xml/libxml2/pattern.c", "xml/libxml2/relaxng.c", "xml/libxml2/SAX2.c", "xml/libxml2/schematron.c", "xml/libxml2/threads.c", "xml/libxml2/tree.c", "xml/libxml2/uri.c", "xml/libxml2/valid.c", "xml/libxml2/xinclude.c", "xml/libxml2/xlink.c", "xml/libxml2/xmlIO.c", "xml/libxml2/xmlmemory.c", "xml/libxml2/xmlmodule.c", "xml/libxml2/xmlreader.c", "xml/libxml2/xmlregexp.c", "xml/libxml2/xmlsave.c", "xml/libxml2/xmlschemas.c", "xml/libxml2/xmlschemastypes.c", "xml/libxml2/xmlstring.c", "xml/libxml2/xmlwriter.c", "xml/libxml2/xpath.c", "xml/libxml2/xpointer.c"]
 	},
 	{
 		"folder": "../../../../PdfFile/",
@@ -213,7 +210,7 @@
 	},
 	{
 		"folder": "../../../raster/Jp2/openjpeg/openjpeg-2.4.0/src/lib/openjp2/",
-		"files": ["bio.c", "cidx_manager.c", "cio.c", "dwt.c", "event.c", "function_list.c", "image.c", "invert.c", "j2k.c", "jp2.c", "mct.c", "mqc.c", "openjpeg.c", "opj_clock.c", "opj_malloc.c", "phix_manager.c", "pi.c", "ppix_manager.c", "sparse_array.c", "t1.c", "t2.c", "tcd.c", "tgt.c", "thix_manager.c", "thread.c", "tpix_manager.c", "../../../../opj_bgraframe.cpp"]
+		"files": ["bio.c", "cidx_manager.c", "cio.c", "dwt.c", "event.c", "function_list.c", "ht_dec.c", "image.c", "invert.c", "j2k.c", "jp2.c", "mct.c", "mqc.c", "openjpeg.c", "opj_clock.c", "opj_malloc.c", "phix_manager.c", "pi.c", "ppix_manager.c", "sparse_array.c", "t1.c", "t2.c", "tcd.c", "tgt.c", "thix_manager.c", "thread.c", "tpix_manager.c", "../../../../opj_bgraframe.cpp"]
 	},
 	{
 		"folder": "../../../../XpsFile/",

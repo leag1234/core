@@ -33,8 +33,8 @@ pwd_path="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 echo pwd_path=${pwd_path}
 echo TOOLS_ROOT=${TOOLS_ROOT}
 
-LIB_VERSION="curl-7_68_0"
-LIB_NAME="curl-7.68.0"
+LIB_VERSION="curl-8_23_0"
+LIB_NAME="curl-8.23.0"
 LIB_DEST_DIR="${pwd_path}/build/ios//curl-universal/lib"
 
 init_log_color
@@ -42,8 +42,7 @@ init_log_color
 echo "https://github.com/curl/curl/releases/download/${LIB_VERSION}/${LIB_NAME}.tar.gz"
 
 # https://curl.haxx.se/download/${LIB_NAME}.tar.gz
-# https://github.com/curl/curl/releases/download/curl-7_69_0/curl-7.69.0.tar.gz
-# https://github.com/curl/curl/releases/download/curl-7_68_0/curl-7.68.0.tar.gz
+# https://github.com/curl/curl/releases/download/curl-8_23_0/curl-8.23.0.tar.gz
 DEVELOPER=$(xcode-select -print-path)
 SDK_VERSION=$(xcrun -sdk iphoneos --show-sdk-version)
 rm -rf "${LIB_DEST_DIR}" "${LIB_NAME}"

@@ -204,7 +204,6 @@ set(SOURCES
     ${DESKTOP_ROOT}/cximage/CxImage/ximatran.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/ximatif.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/tif_xfile.cpp
-    ${DESKTOP_ROOT}/cximage/CxImage/ximajas.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/ximagif.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/ximaico.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/ximatga.cpp
@@ -262,6 +261,7 @@ set(SOURCES
     ${DESKTOP_ROOT}/cximage/png/pngmem.c
     ${DESKTOP_ROOT}/cximage/png/pngerror.c
     ${DESKTOP_ROOT}/cximage/png/png.c
+    ${DESKTOP_ROOT}/cximage/png/pngpread.c
     ${DESKTOP_ROOT}/cximage/png/pngrio.c
     ${DESKTOP_ROOT}/cximage/png/pngtrans.c
     ${DESKTOP_ROOT}/cximage/png/pngget.c
@@ -275,6 +275,7 @@ set(SOURCES
 
     ${DESKTOP_ROOT}/cximage/tiff/tif_close.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_dir.c
+    ${DESKTOP_ROOT}/cximage/tiff/tif_hash_set.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_aux.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_getimage.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_strip.c
@@ -348,9 +349,7 @@ set_source_files_properties(${SOURCES} PROPERTIES GENERATED TRUE)
 
 set_source_files_properties(
     ${DESKTOP_ROOT}/freetype-2.10.4/src/smooth/smooth.c
-    ${DESKTOP_ROOT}/freetype-2.10.4/src/smooth/ftgrays.c
     ${DESKTOP_ROOT}/freetype-2.10.4/src/sfnt/sfnt.c
-    ${DESKTOP_ROOT}/freetype-2.10.4/src/sfnt/ttcmap.c
     PROPERTIES LANGUAGE CXX
 )
 
@@ -374,7 +373,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${EO_CORE_3RD_PARTY_INSTALL_DIR}
     ${CORE_ROOT}/OfficeUtils/src
     ${CORE_ROOT}/OfficeUtils/src/zlib-1.2.11
-    ${DESKTOP_ROOT}/cximage/jasper/include
     ${DESKTOP_ROOT}/cximage/jpeg
     ${DESKTOP_ROOT}/cximage/png
     ${DESKTOP_ROOT}/agg-2.4/include

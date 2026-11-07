@@ -37,7 +37,6 @@ set(SOURCES
     ${DESKTOP_ROOT}/cximage/CxImage/ximatran.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/ximatif.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/tif_xfile.cpp
-    ${DESKTOP_ROOT}/cximage/CxImage/ximajas.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/ximagif.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/ximaico.cpp
     ${DESKTOP_ROOT}/cximage/CxImage/ximatga.cpp
@@ -96,6 +95,7 @@ set(SOURCES
     ${DESKTOP_ROOT}/cximage/png/pngmem.c
     ${DESKTOP_ROOT}/cximage/png/pngerror.c
     ${DESKTOP_ROOT}/cximage/png/png.c
+    ${DESKTOP_ROOT}/cximage/png/pngpread.c
     ${DESKTOP_ROOT}/cximage/png/pngrio.c
     ${DESKTOP_ROOT}/cximage/png/pngtrans.c
     ${DESKTOP_ROOT}/cximage/png/pngget.c
@@ -109,6 +109,7 @@ set(SOURCES
 
     ${DESKTOP_ROOT}/cximage/tiff/tif_close.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_dir.c
+    ${DESKTOP_ROOT}/cximage/tiff/tif_hash_set.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_aux.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_getimage.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_strip.c
@@ -139,53 +140,6 @@ set(SOURCES
     ${DESKTOP_ROOT}/cximage/tiff/tif_fax3sm.c
     ${DESKTOP_ROOT}/cximage/tiff/tif_predict.c
 
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_init.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_stream.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_malloc.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_image.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_cm.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_seq.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_string.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_icc.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_debug.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_iccdata.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_tvp.c
-    ${DESKTOP_ROOT}/cximage/jasper/base/jas_version.c
-    ${DESKTOP_ROOT}/cximage/jasper/mif/mif_cod.c
-    ${DESKTOP_ROOT}/cximage/jasper/pnm/pnm_dec.c
-    ${DESKTOP_ROOT}/cximage/jasper/pnm/pnm_enc.c
-    ${DESKTOP_ROOT}/cximage/jasper/pnm/pnm_cod.c
-    ${DESKTOP_ROOT}/cximage/jasper/bmp/bmp_dec.c
-    ${DESKTOP_ROOT}/cximage/jasper/bmp/bmp_enc.c
-    ${DESKTOP_ROOT}/cximage/jasper/bmp/bmp_cod.c
-    ${DESKTOP_ROOT}/cximage/jasper/ras/ras_dec.c
-    ${DESKTOP_ROOT}/cximage/jasper/ras/ras_enc.c
-    ${DESKTOP_ROOT}/cximage/jasper/jp2/jp2_dec.c
-    ${DESKTOP_ROOT}/cximage/jasper/jp2/jp2_enc.c
-    ${DESKTOP_ROOT}/cximage/jasper/jp2/jp2_cod.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_cs.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_enc.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_dec.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_t1cod.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_math.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_util.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_tsfb.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_mct.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_t1enc.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_t1dec.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_bs.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_t2cod.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_t2enc.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_t2dec.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_tagtree.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_mqenc.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_mqdec.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_mqcod.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpc/jpc_qmfb.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpg/jpg_val.c
-    ${DESKTOP_ROOT}/cximage/jasper/jpg/jpg_dummy.c
-    ${DESKTOP_ROOT}/cximage/jasper/pgx/pgx_dec.c
-    ${DESKTOP_ROOT}/cximage/jasper/pgx/pgx_enc.c
 
     ${DESKTOP_ROOT}/raster/Jp2/J2kFile.cpp
     ${DESKTOP_ROOT}/raster/Jp2/Reader.cpp
@@ -611,6 +565,7 @@ set(SOURCES
     ${DESKTOP_ROOT}/raster/Jp2/openjpeg/openjpeg-2.4.0/src/lib/openjp2/dwt.c
     ${DESKTOP_ROOT}/raster/Jp2/openjpeg/openjpeg-2.4.0/src/lib/openjp2/event.c
     ${DESKTOP_ROOT}/raster/Jp2/openjpeg/openjpeg-2.4.0/src/lib/openjp2/function_list.c
+    ${DESKTOP_ROOT}/raster/Jp2/openjpeg/openjpeg-2.4.0/src/lib/openjp2/ht_dec.c
     ${DESKTOP_ROOT}/raster/Jp2/openjpeg/openjpeg-2.4.0/src/lib/openjp2/image.c
     ${DESKTOP_ROOT}/raster/Jp2/openjpeg/openjpeg-2.4.0/src/lib/openjp2/invert.c
     ${DESKTOP_ROOT}/raster/Jp2/openjpeg/openjpeg-2.4.0/src/lib/openjp2/j2k.c
@@ -841,8 +796,44 @@ set(SOURCES
 
     ${DESKTOP_ROOT}/xml/src/xmllight.cpp
     ${DESKTOP_ROOT}/xml/src/xmldom.cpp
-    ${DESKTOP_ROOT}/xml/build/qt/libxml2_all.c
-    ${DESKTOP_ROOT}/xml/build/qt/libxml2_all2.c
+    ${DESKTOP_ROOT}/xml/libxml2/buf.c
+    ${DESKTOP_ROOT}/xml/libxml2/c14n.c
+    ${DESKTOP_ROOT}/xml/libxml2/catalog.c
+    ${DESKTOP_ROOT}/xml/libxml2/chvalid.c
+    ${DESKTOP_ROOT}/xml/libxml2/debugXML.c
+    ${DESKTOP_ROOT}/xml/libxml2/dict.c
+    ${DESKTOP_ROOT}/xml/libxml2/encoding.c
+    ${DESKTOP_ROOT}/xml/libxml2/entities.c
+    ${DESKTOP_ROOT}/xml/libxml2/error.c
+    ${DESKTOP_ROOT}/xml/libxml2/globals.c
+    ${DESKTOP_ROOT}/xml/libxml2/hash.c
+    ${DESKTOP_ROOT}/xml/libxml2/HTMLparser.c
+    ${DESKTOP_ROOT}/xml/libxml2/HTMLtree.c
+    ${DESKTOP_ROOT}/xml/libxml2/list.c
+    ${DESKTOP_ROOT}/xml/libxml2/parser.c
+    ${DESKTOP_ROOT}/xml/libxml2/parserInternals.c
+    ${DESKTOP_ROOT}/xml/libxml2/pattern.c
+    ${DESKTOP_ROOT}/xml/libxml2/relaxng.c
+    ${DESKTOP_ROOT}/xml/libxml2/SAX2.c
+    ${DESKTOP_ROOT}/xml/libxml2/schematron.c
+    ${DESKTOP_ROOT}/xml/libxml2/threads.c
+    ${DESKTOP_ROOT}/xml/libxml2/tree.c
+    ${DESKTOP_ROOT}/xml/libxml2/uri.c
+    ${DESKTOP_ROOT}/xml/libxml2/valid.c
+    ${DESKTOP_ROOT}/xml/libxml2/xinclude.c
+    ${DESKTOP_ROOT}/xml/libxml2/xlink.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlIO.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlmemory.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlmodule.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlreader.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlregexp.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlsave.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlschemas.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlschemastypes.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlstring.c
+    ${DESKTOP_ROOT}/xml/libxml2/xmlwriter.c
+    ${DESKTOP_ROOT}/xml/libxml2/xpath.c
+    ${DESKTOP_ROOT}/xml/libxml2/xpointer.c
 
     ${CMAKE_CURRENT_SOURCE_DIR}/wasm/src/lib/wasm_jmp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/wasm/src/drawingfile.cpp
@@ -854,9 +845,7 @@ set_source_files_properties(${SOURCES} PROPERTIES GENERATED TRUE)
 
 set_source_files_properties(
     ${DESKTOP_ROOT}/freetype-2.10.4/src/smooth/smooth.c
-    #${DESKTOP_ROOT}/freetype-2.10.4/src/smooth/ftgrays.c
     ${DESKTOP_ROOT}/freetype-2.10.4/src/sfnt/sfnt.c
-    #${DESKTOP_ROOT}/freetype-2.10.4/src/sfnt/ttcmap.c
     PROPERTIES LANGUAGE CXX
 )
 
@@ -873,7 +862,6 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/wasm/src/lib
     ${DESKTOP_ROOT}/agg-2.4/include
-    ${DESKTOP_ROOT}/cximage/jasper/include
     ${DESKTOP_ROOT}/cximage/jpeg
     ${DESKTOP_ROOT}/cximage/png
     ${DESKTOP_ROOT}/freetype-2.10.4/include
@@ -1061,4 +1049,3 @@ add_custom_command(
 add_custom_target(web_bundle ALL DEPENDS "${EO_CORE_OUTPUT_DIR}/engine/drawingfile_native.js")
 
 declare_victory( ${PROJECT_NAME} )
-

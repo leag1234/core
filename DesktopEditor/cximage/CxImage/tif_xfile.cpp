@@ -151,14 +151,21 @@ _TIFFmemset(tdata_t p, int v, tsize_t c)
 	memset(p, v, (size_t) c);
 }
 
+void*
+_TIFFcalloc(tmsize_t nmemb, tmsize_t siz)
+{
+	if (nmemb == 0 || siz == 0) return NULL;
+	return calloc((size_t) nmemb, (size_t) siz);
+}
+
 void
-_TIFFmemcpy(tdata_t d, const tdata_t s, tsize_t c)
+_TIFFmemcpy(void* d, const void* s, tmsize_t c)
 {
 	memcpy(d, s, (size_t) c);
 }
 
 int
-_TIFFmemcmp(const tdata_t p1, const tdata_t p2, tsize_t c)
+_TIFFmemcmp(const void* p1, const void* p2, tmsize_t c)
 {
 	return (memcmp(p1, p2, (size_t) c));
 }

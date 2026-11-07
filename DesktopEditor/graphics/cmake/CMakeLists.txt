@@ -233,6 +233,7 @@ add_library(graphics SHARED
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/png/pngwtran.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/png/pngwutil.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_stream.cxx
+    ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_hash_set.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_aux.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_close.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_codec.c
@@ -265,7 +266,6 @@ add_library(graphics SHARED
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_swab.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_thunder.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_tile.c
-    # ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_unix.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_version.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_warning.c
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/tiff/tif_write.c
@@ -281,7 +281,6 @@ add_library(graphics SHARED
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/CxImage/ximaico.cpp
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/CxImage/ximainfo.cpp
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/CxImage/ximaint.cpp
-    ${DESKTOP_EDITOR_ROOT_DIR}/cximage/CxImage/ximajas.cpp
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/CxImage/ximajbg.cpp
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/CxImage/ximajpg.cpp
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/CxImage/ximalpha.cpp
@@ -304,56 +303,6 @@ add_library(graphics SHARED
     ${DESKTOP_EDITOR_ROOT_DIR}/cximage/CxImage/xmemfile.cpp
 
     # !disable_cximage_all {
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_cm.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_debug.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_getopt.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_icc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_iccdata.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_image.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_init.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_malloc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_seq.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_stream.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_string.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_tvp.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/base/jas_version.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/bmp/bmp_cod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/bmp/bmp_dec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/bmp/bmp_enc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jp2/jp2_cod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jp2/jp2_dec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jp2/jp2_enc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_bs.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_cs.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_dec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_enc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_math.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_mct.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_mqcod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_mqdec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_mqenc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_qmfb.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_t1cod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_t1dec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_t1enc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_t2cod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_t2dec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_t2enc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_tagtree.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_tsfb.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpc/jpc_util.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpg/jpg_dummy.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/jpg/jpg_val.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/mif/mif_cod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/pgx/pgx_cod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/pgx/pgx_dec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/pgx/pgx_enc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/pnm/pnm_cod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/pnm/pnm_dec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/pnm/pnm_enc.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/ras/ras_cod.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/ras/ras_dec.c
-        ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/ras/ras_enc.c
         ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jbig/jbig_tab.c
         ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jbig/jbig.c
         ${DESKTOP_EDITOR_ROOT_DIR}/cximage/raw/libdcr.c
@@ -1004,10 +953,15 @@ target_compile_definitions(graphics PRIVATE
     FT_CONFIG_OPTION_USE_BROTLI
 )
 
-if(LINUX)
+if(UNIX)
+    # FreeType 2.15 builds/unix/ftsystem.c needs these on every POSIX target, WebAssembly included.
     target_compile_definitions(graphics PRIVATE
         HAVE_UNISTD_H
         HAVE_FCNTL_H
+    )
+endif()
+if(LINUX)
+    target_compile_definitions(graphics PRIVATE
         _LINUX
     )
 endif()
@@ -1024,7 +978,6 @@ target_include_directories(graphics PRIVATE
     ${EO_CORE_3RD_PARTY_INSTALL_DIR}
     ${KATANA_INSTALL_DIR_ABS}/src
 	${DESKTOP_EDITOR_ROOT_DIR}/agg-2.4/include
-    ${DESKTOP_EDITOR_ROOT_DIR}/cximage/jasper/include
 	${DESKTOP_EDITOR_ROOT_DIR}/cximage/jpeg
 	${DESKTOP_EDITOR_ROOT_DIR}/cximage/png
     ${OFFICE_UTILS_ROOT_DIR}/src/zlib-1.2.11 # !config_zlip_image

@@ -67,7 +67,6 @@ set(SRC
     ${CORE_ROOT}/DesktopEditor/cximage/CxImage/ximatran.cpp
     ${CORE_ROOT}/DesktopEditor/cximage/CxImage/ximatif.cpp
     ${CORE_ROOT}/DesktopEditor/cximage/CxImage/tif_xfile.cpp
-    ${CORE_ROOT}/DesktopEditor/cximage/CxImage/ximajas.cpp
     ${CORE_ROOT}/DesktopEditor/cximage/CxImage/ximagif.cpp
     ${CORE_ROOT}/DesktopEditor/cximage/CxImage/ximaico.cpp
     ${CORE_ROOT}/DesktopEditor/cximage/CxImage/ximatga.cpp
@@ -127,6 +126,7 @@ set(SRC
     ${CORE_ROOT}/DesktopEditor/cximage/png/pngmem.c
     ${CORE_ROOT}/DesktopEditor/cximage/png/pngerror.c
     ${CORE_ROOT}/DesktopEditor/cximage/png/png.c
+    ${CORE_ROOT}/DesktopEditor/cximage/png/pngpread.c
     ${CORE_ROOT}/DesktopEditor/cximage/png/pngrio.c
     ${CORE_ROOT}/DesktopEditor/cximage/png/pngtrans.c
     ${CORE_ROOT}/DesktopEditor/cximage/png/pngget.c
@@ -141,6 +141,7 @@ set(SRC
     # ---- tiff ----
     ${CORE_ROOT}/DesktopEditor/cximage/tiff/tif_close.c
     ${CORE_ROOT}/DesktopEditor/cximage/tiff/tif_dir.c
+    ${CORE_ROOT}/DesktopEditor/cximage/tiff/tif_hash_set.c
     ${CORE_ROOT}/DesktopEditor/cximage/tiff/tif_aux.c
     ${CORE_ROOT}/DesktopEditor/cximage/tiff/tif_getimage.c
     ${CORE_ROOT}/DesktopEditor/cximage/tiff/tif_strip.c
@@ -220,54 +221,6 @@ set(SRC
 
 
     ### These are part of full build    
-    # ---- jasper ----
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_init.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_stream.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_malloc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_image.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_cm.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_seq.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_string.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_icc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_debug.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_iccdata.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_tvp.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/base/jas_version.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/mif/mif_cod.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/pnm/pnm_dec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/pnm/pnm_enc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/pnm/pnm_cod.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/bmp/bmp_dec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/bmp/bmp_enc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/bmp/bmp_cod.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/ras/ras_dec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/ras/ras_enc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jp2/jp2_dec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jp2/jp2_enc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jp2/jp2_cod.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_cs.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_enc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_dec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_t1cod.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_math.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_util.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_tsfb.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_mct.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_t1enc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_t1dec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_bs.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_t2cod.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_t2enc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_t2dec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_tagtree.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_mqenc.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_mqdec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_mqcod.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpc/jpc_qmfb.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpg/jpg_val.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/jpg/jpg_dummy.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/pgx/pgx_dec.c
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/pgx/pgx_enc.c
 
     # ---- jp2 ----
     ${CORE_ROOT}/DesktopEditor/raster/Jp2/J2kFile.cpp
@@ -422,7 +375,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CORE_ROOT}/OfficeUtils/src/zlib-1.2.11
     ${CORE_ROOT}/OfficeUtils/src
-    ${CORE_ROOT}/DesktopEditor/cximage/jasper/include
     ${CORE_ROOT}/DesktopEditor/cximage/jpeg
     ${CORE_ROOT}/DesktopEditor/cximage/png
     ${CORE_ROOT}/DesktopEditor/xml/libxml2/include

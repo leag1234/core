@@ -136,10 +136,15 @@ int isnan (double d) {
 #define mkdir(p,m) _mkdir(p)
 #endif
 
+#if !defined(_WIN32)
+#define HAVE_PTHREAD_H
+#define XML_SYSCONFDIR "/etc"
+#endif
+
 /* Threading API to use should be specified here for compatibility reasons.
    This is however best specified on the compiler's command-line. */
 #if defined(LIBXML_THREAD_ENABLED)
-#if !defined(HAVE_PTHREAD_H) && !defined(HAVE_WIN32_THREADS) && !defined(_WIN32_WCE)
+#if defined(_WIN32) && !defined(HAVE_PTHREAD_H) && !defined(HAVE_WIN32_THREADS) && !defined(_WIN32_WCE)
 #define HAVE_WIN32_THREADS
 #endif
 #endif

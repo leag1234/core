@@ -54,8 +54,6 @@ if not base.is_dir("openssl"):
 if not base.is_dir("xml"):
   base.print_info("Copy xml...")
   base.copy_dir("./../../../../xml", "./xml")
-  base.replaceInFile("./xml/libxml2/libxml.h", "xmlNop(void)", "xmlNop(void* context, char* buffer, int len)")
-  base.replaceInFile("./xml/libxml2/xmlIO.c", "xmlNop(void)", "xmlNop(void* context, char* buffer, int len)")
   base.replaceInFile("./xml/src/xmllight_private.h", "#include \"../../common/", "#include \"../../../../../../common/")
   base.replaceInFile("./xml/include/xmlutils.h", "#include \"../../common/", "#include \"../../../../../../common/")
 
@@ -97,7 +95,7 @@ compiler_flags.append("-DHAVE_VA_COPY -DLIBXML_READER_ENABLED -DLIBXML_PUSH_ENAB
 
 compiler_flags.append("-I./xml/libxml2/include -I./xml/libxml2/include/libxml -I./xml/build/qt")
 
-input_xml_sources = ["./xml/build/qt/libxml2_all.c", "./xml/build/qt/libxml2_all2.c", "./xml/src/xmllight.cpp", "./xml/src/xmldom.cpp"]
+input_xml_sources = ["./xml/libxml2/buf.c", "./xml/libxml2/c14n.c", "./xml/libxml2/catalog.c", "./xml/libxml2/chvalid.c", "./xml/libxml2/debugXML.c", "./xml/libxml2/dict.c", "./xml/libxml2/encoding.c", "./xml/libxml2/entities.c", "./xml/libxml2/error.c", "./xml/libxml2/globals.c", "./xml/libxml2/hash.c", "./xml/libxml2/HTMLparser.c", "./xml/libxml2/HTMLtree.c", "./xml/libxml2/list.c", "./xml/libxml2/parser.c", "./xml/libxml2/parserInternals.c", "./xml/libxml2/pattern.c", "./xml/libxml2/relaxng.c", "./xml/libxml2/SAX2.c", "./xml/libxml2/schematron.c", "./xml/libxml2/threads.c", "./xml/libxml2/tree.c", "./xml/libxml2/uri.c", "./xml/libxml2/valid.c", "./xml/libxml2/xinclude.c", "./xml/libxml2/xlink.c", "./xml/libxml2/xmlIO.c", "./xml/libxml2/xmlmemory.c", "./xml/libxml2/xmlmodule.c", "./xml/libxml2/xmlreader.c", "./xml/libxml2/xmlregexp.c", "./xml/libxml2/xmlsave.c", "./xml/libxml2/xmlschemas.c", "./xml/libxml2/xmlschemastypes.c", "./xml/libxml2/xmlstring.c", "./xml/libxml2/xmlwriter.c", "./xml/libxml2/xpath.c", "./xml/libxml2/xpointer.c", "./xml/src/xmllight.cpp", "./xml/src/xmldom.cpp"]
 
 # KERNEL
 libKernel_src_parh = "../../../../common/"
