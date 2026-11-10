@@ -32,7 +32,7 @@ void WriteBaseHtmlStyles(NSFile::CFileBinary& oFile)
 	oFile.WriteStringUTF8(L"<style>");
 
 	// Main styles
-	oFile.WriteStringUTF8(L"* { font-family: Arial; color:black; white-space:pre; }");
+	oFile.WriteStringUTF8(L"* { font-family: Arial; font-size: 11pt; color:black; white-space:pre; }");
 	oFile.WriteStringUTF8(L"p { margin: 0 0 10px; display: block; }");
 	oFile.WriteStringUTF8(L"a { color: #0553c1; text-decoration: underline; } a:visited { color: #954f72; text-decoration: underline; }");
 	oFile.WriteStringUTF8(L"ul { margin-top: 0; margin-bottom: 10px; }");
@@ -48,10 +48,10 @@ void WriteBaseHtmlStyles(NSFile::CFileBinary& oFile)
 	oFile.WriteStringUTF8(L"table tbody tr th, table tbody tr td { padding 8px; line-height: 1.4; border-top: 1px solid #ddd; }");
 
 	// Styles for blockquote
-	oFile.WriteStringUTF8(L"blockquote { border-left: 3px solid #e9e9e9;  margin: 1.5em 0; padding: 0.5em 10px 0.5em 24px; font-size: 1.25rem; display: block; margin-top: 8pt; font-style: italic; color: #404040; }");
+	oFile.WriteStringUTF8(L"blockquote { border-left: 3px solid #d0d7de; margin: 8pt 0; padding: 0 1em; display: block; color: #59636e; }");
 
 	// Styles for code
-	oFile.WriteStringUTF8(L"code { padding: 2px 4px; font-size: 90%; color: #c7254e; background-color: #f9f2f4; }");
+	oFile.WriteStringUTF8(L"code { padding: 2px 4px; font-size: 90%; color: #1f2328; background-color: #eff1f3; }");
 	oFile.WriteStringUTF8(L"pre code { padding: 0px; white-space: pre-wrap; border-radius: 0; background-color: #f8f8f8; color:black; }");
 	oFile.WriteStringUTF8(L"pre { display: block; padding: 9.5px; margin: 0 0 10px; line-height: 1.4; word-break: break-all; word-wrap: break-word; background-color: #f8f8f8; border: none; font-size: 1em; }");
 	oFile.WriteStringUTF8(L"code, pre { font-family: Menlo, Monaco, Consolas, \"Courier New\", monospace; }");
@@ -71,6 +71,17 @@ void ReplaceAll(std::string& sValue, const std::string& sFrom, const std::string
 {
 	for (size_t pos = sValue.find(sFrom); pos != std::string::npos; pos = sValue.find(sFrom, pos + sTo.length()))
 		sValue.replace(pos, sFrom.length(), sTo);
+}
+
+// md4c writes the column alignment as an HTML align attribute, which the HTML import applies only to text
+// directly inside the cell: a cell starting with bold text or a link lost it, and the header style centred
+// every header. A CSS text-align on the cell is inherited by everything in it.
+void AlignTableCells(std::string& sHtml)
+{
+	for (const char* sTag : {"<td", "<th"})
+		for (const char* sAlign : {"left", "center", "right"})
+			ReplaceAll(sHtml, std::string(sTag) + " align=\"" + sAlign + "\">",
+			           std::string(sTag) + " align=\"" + sAlign + "\" style=\"text-align: " + sAlign + "\">");
 }
 
 void ReplaceTaskCheckboxes(std::string& sHtml)
@@ -110,6 +121,7 @@ bool ConvertMdFileToHtml(const std::wstring& wsPathToMdFile, const std::wstring&
 
 	// The HTML import ignores <input>, so task list boxes would disappear: write them as ballot box characters.
 	ReplaceTaskCheckboxes(sHtml);
+	AlignTableCells(sHtml);
 	oFile.WriteFile((const BYTE*)sHtml.c_str(), (DWORD)sHtml.length());
 
 	oFile.WriteStringUTF8(L"</body></html>");

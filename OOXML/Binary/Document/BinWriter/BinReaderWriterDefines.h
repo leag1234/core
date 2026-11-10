@@ -420,7 +420,8 @@ extern int g_nCurFormatVersion;
 		Glow = 53,
 		Props3d = 54,
 		Scene3d = 55,
-		Kern = 56
+		Kern = 56,
+		Border = 57
 	};}
 	namespace c_oSerProp_rowPrType{enum c_oSerProp_rowPrType
 	{

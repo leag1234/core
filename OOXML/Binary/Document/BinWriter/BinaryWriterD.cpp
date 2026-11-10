@@ -658,6 +658,15 @@ void Binary_rPrWriter::Write_rPr(OOX::Logic::CRunProperty* rPr)
 		m_oBcw.WriteShd(rPr->m_oShd.get());
 		m_oBcw.WriteItemWithLengthEnd(nCurPos);
 	}
+	//Border (run properties are framed with a length type byte, like Shd)
+	if (rPr->m_oBdr.IsInit())
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerProp_rPrType::Border);
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Variable);
+		nCurPos = m_oBcw.WriteItemWithLengthStart();
+		m_oBcw.WriteBorder(rPr->m_oBdr.get());
+		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	}
 	//RStyle
 	if ((false != rPr->m_oRStyle.IsInit()) && (rPr->m_oRStyle->m_sVal.IsInit()))
 	{

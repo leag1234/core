@@ -317,6 +317,62 @@ template<typename T> int Binary_CommonReader2::ReadTrackRevision2(long length, T
 	READ1_DEF(length, res, this->ReadTrackRevisionInner2, poResult);
 	return res;
 }
+int Binary_CommonReader2::ReadBorder(BYTE type, long length, void* poResult)
+{
+	int res = c_oSerConstants::ReadOk;
+	ComplexTypes::Word::CBorder* pBorder = static_cast<ComplexTypes::Word::CBorder*>(poResult);
+	
+	if ( c_oSerBorderType::Color == type )
+	{
+		pBorder->m_oColor.Init();
+		pBorder->m_oColor->SetValue(SimpleTypes::hexcolorRGB);
+		
+		this->ReadHexColor(pBorder->m_oColor.GetPointer(), length);
+	}
+	else if ( c_oSerBorderType::Space == type )
+	{
+		pBorder->m_oSpace.Init();
+		pBorder->m_oSpace->SetValue(SerializeCommon::Round(g_dKoef_mm_to_pt * m_oBufferedStream.GetDouble()));
+	}
+	else if ( c_oSerBorderType::SpacePoint == type )
+	{
+		pBorder->m_oSpace.Init();
+		pBorder->m_oSpace->SetValue(m_oBufferedStream.GetLong());
+	}
+	else if ( c_oSerBorderType::Size == type )
+	{
+		pBorder->m_oSz.Init();
+		pBorder->m_oSz->SetValue(SerializeCommon::Round(g_dKoef_mm_to_eightpoint * m_oBufferedStream.GetDouble()));
+	}
+	else if ( c_oSerBorderType::Size8Point == type )
+	{
+		pBorder->m_oSz.Init();
+		pBorder->m_oSz->SetValue(m_oBufferedStream.GetLong());
+	}
+	else if ( c_oSerBorderType::Value == type )
+	{
+		pBorder->m_oVal.Init();
+
+		if (0 != m_oBufferedStream.GetUChar())
+			pBorder->m_oVal->SetValue(SimpleTypes::bordervalueSingle);
+		else
+			pBorder->m_oVal->SetValue(SimpleTypes::bordervalueNone);
+	}
+	else if (c_oSerBorderType::ValueType == type)
+	{
+		pBorder->m_oVal.Init();
+		pBorder->m_oVal->SetValue((SimpleTypes::EBorder)m_oBufferedStream.GetLong());
+	}
+	else if ( c_oSerBorderType::ColorTheme == type )
+	{
+		CThemeColor ThemeColor;
+		this->ReadThemeColor(length, ThemeColor);
+		ThemeColor.ToCThemeColor(pBorder->m_oColor, pBorder->m_oThemeColor, pBorder->m_oThemeTint, pBorder->m_oThemeShade);
+	}
+	else
+		res = c_oSerConstants::ReadUnknown;
+	return res;
+}
 int Binary_CommonReader2::ReadShdComplexType(BYTE type, long length, void* poResult)
 {
 	if (length < 0)
@@ -640,6 +696,11 @@ int Binary_rPrReader::ReadContent(BYTE type, long length, void* poResult)
 		{
 			pRPr->m_oShd.Init();
 			READ2_DEF(length, res, oBinary_CommonReader2.ReadShdComplexType, pRPr->m_oShd.GetPointer());			
+		}break;
+		case c_oSerProp_rPrType::Border:
+		{
+			pRPr->m_oBdr.Init();
+			READ2_DEF(length, res, oBinary_CommonReader2.ReadBorder, pRPr->m_oBdr.GetPointer());
 		}break;
 		case c_oSerProp_rPrType::RStyle:
 		{
@@ -1331,59 +1392,7 @@ int Binary_pPrReader::ReadBorders(BYTE type, long length, void* poResult)
 }
 int Binary_pPrReader::ReadBorder(BYTE type, long length, void* poResult)
 {
-	int res = c_oSerConstants::ReadOk;
-	ComplexTypes::Word::CBorder* pBorder = static_cast<ComplexTypes::Word::CBorder*>(poResult);
-	
-	if ( c_oSerBorderType::Color == type )
-	{
-		pBorder->m_oColor.Init();
-		pBorder->m_oColor->SetValue(SimpleTypes::hexcolorRGB);
-		
-		oBinary_CommonReader2.ReadHexColor(pBorder->m_oColor.GetPointer(), length);
-	}
-	else if ( c_oSerBorderType::Space == type )
-	{
-		pBorder->m_oSpace.Init();
-		pBorder->m_oSpace->SetValue(SerializeCommon::Round(g_dKoef_mm_to_pt * m_oBufferedStream.GetDouble()));
-	}
-	else if ( c_oSerBorderType::SpacePoint == type )
-	{
-		pBorder->m_oSpace.Init();
-		pBorder->m_oSpace->SetValue(m_oBufferedStream.GetLong());
-	}
-	else if ( c_oSerBorderType::Size == type )
-	{
-		pBorder->m_oSz.Init();
-		pBorder->m_oSz->SetValue(SerializeCommon::Round(g_dKoef_mm_to_eightpoint * m_oBufferedStream.GetDouble()));
-	}
-	else if ( c_oSerBorderType::Size8Point == type )
-	{
-		pBorder->m_oSz.Init();
-		pBorder->m_oSz->SetValue(m_oBufferedStream.GetLong());
-	}
-	else if ( c_oSerBorderType::Value == type )
-	{
-		pBorder->m_oVal.Init();
-
-		if (0 != m_oBufferedStream.GetUChar())
-			pBorder->m_oVal->SetValue(SimpleTypes::bordervalueSingle);
-		else
-			pBorder->m_oVal->SetValue(SimpleTypes::bordervalueNone);
-	}
-	else if (c_oSerBorderType::ValueType == type)
-	{
-		pBorder->m_oVal.Init();
-		pBorder->m_oVal->SetValue((SimpleTypes::EBorder)m_oBufferedStream.GetLong());
-	}
-	else if ( c_oSerBorderType::ColorTheme == type )
-	{
-		CThemeColor ThemeColor;
-		oBinary_CommonReader2.ReadThemeColor(length, ThemeColor);
-		ThemeColor.ToCThemeColor(pBorder->m_oColor, pBorder->m_oThemeColor, pBorder->m_oThemeTint, pBorder->m_oThemeShade);
-	}
-	else
-		res = c_oSerConstants::ReadUnknown;
-	return res;
+	return oBinary_CommonReader2.ReadBorder(type, length, poResult);
 }
 int Binary_pPrReader::ReadFramePr(BYTE type, long length, void* poResult)
 {

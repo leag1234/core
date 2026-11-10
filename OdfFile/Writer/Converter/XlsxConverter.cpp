@@ -531,7 +531,13 @@ void XlsxConverter::convert(OOX::Spreadsheet::CWorksheet *oox_sheet)
 /////////////////////////////////////////////////////////////////////////
 	convert(oox_sheet->m_oSheetViews.GetPointer());
 	convert(oox_sheet->m_oPageSetup.GetPointer());
-	convert(oox_sheet->m_oPageMargins.GetPointer());
+	{
+		OOX::Spreadsheet::CHeaderFooter *hf = oox_sheet->m_oHeaderFooter.GetPointer();
+		bool has_even_first = hf && ((hf->m_oDifferentOddEven.IsInit() && hf->m_oDifferentOddEven->ToBool()) || (hf->m_oDifferentFirst.IsInit() && hf->m_oDifferentFirst->ToBool()));
+		bool has_header = hf && (has_even_first || hf->m_oOddHeader.IsInit() || hf->m_oEvenHeader.IsInit() || hf->m_oFirstHeader.IsInit());
+		bool has_footer = hf && (has_even_first || hf->m_oOddFooter.IsInit() || hf->m_oEvenFooter.IsInit() || hf->m_oFirstFooter.IsInit());
+		convert(oox_sheet->m_oPageMargins.GetPointer(), has_header, has_footer);
+	}
 	convert(oox_sheet->m_oPrintOptions.GetPointer());
 	convert(oox_sheet->m_oPicture.GetPointer());
 	convert(oox_sheet->m_oSheetProtection.GetPointer());
@@ -2077,30 +2083,51 @@ void XlsxConverter::convert(OOX::Spreadsheet::CPageSetup *oox_page)
 	}
 }
 
-void XlsxConverter::convert(OOX::Spreadsheet::CPageMargins *oox_page)
+void XlsxConverter::convert(OOX::Spreadsheet::CPageMargins *oox_page, bool has_header, bool has_footer)
 {
 	if (!oox_page) return;
-	_CP_OPT(odf_types::length) top, left, right, bottom, other;
+	_CP_OPT(odf_types::length) top, left, right, bottom, header, footer;
 
 	if (oox_page->m_oTop.IsInit())		top		= odf_types::length(oox_page->m_oTop->GetValue(), odf_types::length::pt);
 	if (oox_page->m_oLeft.IsInit())		left	= odf_types::length(oox_page->m_oLeft->GetValue(), odf_types::length::pt);
 	if (oox_page->m_oRight.IsInit())	right	= odf_types::length(oox_page->m_oRight->GetValue(), odf_types::length::pt);
 	if (oox_page->m_oBottom.IsInit())	bottom	= odf_types::length(oox_page->m_oBottom->GetValue(), odf_types::length::pt);
+	if (oox_page->m_oHeader.IsInit())	header	= odf_types::length(oox_page->m_oHeader->GetValue(), odf_types::length::pt);
+	if (oox_page->m_oFooter.IsInit())	footer	= odf_types::length(oox_page->m_oFooter->GetValue(), odf_types::length::pt);
+
+	// In xlsx "top"/"bottom" are measured from the page edge to the body, "header"/"footer" from the page edge
+	// to the header/footer. In ods "margin-top"/"margin-bottom" are measured from the page edge to the header/footer
+	// and the header/footer height is added to reach the body (see the ods -> xlsx conversion in styles.cpp, where
+	// top = margin-top + header height, header = margin-top). When a header/footer is written, the margin must be
+	// the xlsx header/footer distance and the header/footer height the difference; writing "top"/"bottom" as the
+	// margin added the height again on every round trip (margin-bottom grew like a Fibonacci sequence).
+	_CP_OPT(odf_types::length) header_height, footer_height;
+	if (has_header && header && top)
+	{
+		double h = top->get_value_unit(odf_types::length::pt) - header->get_value_unit(odf_types::length::pt);
+		if (h > 0)
+		{
+			header_height = odf_types::length(h, odf_types::length::pt);
+			top = header;
+		}
+	}
+	if (has_footer && footer && bottom)
+	{
+		double h = bottom->get_value_unit(odf_types::length::pt) - footer->get_value_unit(odf_types::length::pt);
+		if (h > 0)
+		{
+			footer_height = odf_types::length(h, odf_types::length::pt);
+			bottom = footer;
+		}
+	}
 
 	ods_context->page_layout_context()->set_page_margin(top, left, bottom, right);
 	
-	if (oox_page->m_oFooter.IsInit())
-	{
-		other = odf_types::length(oox_page->m_oFooter->GetValue(), odf_types::length::pt);
-		ods_context->page_layout_context()->set_footer_size(other, other);
-	}
+	if (footer_height)
+		ods_context->page_layout_context()->set_footer_size(footer_height, footer_height);
 	
-	if (oox_page->m_oHeader.IsInit())
-	{
-		other = odf_types::length(oox_page->m_oHeader->GetValue(), odf_types::length::pt);
-		ods_context->page_layout_context()->set_header_size(other, other);
-	}
-
+	if (header_height)
+		ods_context->page_layout_context()->set_header_size(header_height, header_height);
 }
 void XlsxConverter::convert(OOX::Spreadsheet::CSheetFormatPr *oox_sheet_format_pr)
 {
