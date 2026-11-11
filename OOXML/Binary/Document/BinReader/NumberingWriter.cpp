@@ -30,6 +30,41 @@ namespace Writers
 	NumberingWriter::NumberingWriter(std::wstring sDir) : m_sDir(sDir)
 	{
 	}
+	static std::wstring TwipsToPtString(int nTwips)
+	{
+		std::wstring sResult = std::to_wstring(nTwips / 20);
+
+		int nHundredths = (nTwips % 20) * 5;
+		if (0 != nHundredths)
+		{
+			sResult += L".";
+			if (0 == nHundredths % 10)
+			{
+				sResult += std::to_wstring(nHundredths / 10);
+			}
+			else
+			{
+				if (nHundredths < 10)
+					sResult += L"0";
+				sResult += std::to_wstring(nHundredths);
+			}
+		}
+		return sResult;
+	}
+	void NumberingWriter::AddPicBullet(int nId, const std::wstring& sRId, int nWidthTwips, int nHeightTwips)
+	{
+		if (nWidthTwips <= 0 || nHeightTwips <= 0)
+		{
+			nWidthTwips = 180;	//9pt, the size Word uses
+			nHeightTwips = 180;
+		}
+		std::wstring sShapeId = L"_x0000_i" + std::to_wstring(m_nPicBulletShapeId++);
+
+		m_oPicBullets.WriteString(L"<w:numPicBullet w:numPicBulletId=\"" + std::to_wstring(nId) + L"\"><w:pict>");
+		m_oPicBullets.WriteString(L"<v:shapetype id=\"_x0000_t75\" coordsize=\"21600,21600\" o:spt=\"75\" o:preferrelative=\"t\" path=\"m@4@5l@4@11@9@11@9@5xe\" filled=\"f\" stroked=\"f\"><v:stroke joinstyle=\"miter\"/><v:formulas><v:f eqn=\"if lineDrawn pixelLineWidth 0\"/><v:f eqn=\"sum @0 1 0\"/><v:f eqn=\"sum 0 0 @1\"/><v:f eqn=\"prod @2 1 2\"/><v:f eqn=\"prod @3 21600 pixelWidth\"/><v:f eqn=\"prod @3 21600 pixelHeight\"/><v:f eqn=\"sum @0 0 1\"/><v:f eqn=\"prod @6 1 2\"/><v:f eqn=\"prod @7 21600 pixelWidth\"/><v:f eqn=\"sum @8 21600 0\"/><v:f eqn=\"prod @7 21600 pixelHeight\"/><v:f eqn=\"sum @10 21600 0\"/></v:formulas><v:path o:extrusionok=\"f\" gradientshapeok=\"t\" o:connecttype=\"rect\"/><o:lock v:ext=\"edit\" aspectratio=\"t\"/></v:shapetype>");
+		m_oPicBullets.WriteString(L"<v:shape id=\"" + sShapeId + L"\" type=\"#_x0000_t75\" style=\"width:" + TwipsToPtString(nWidthTwips) + L"pt;height:" + TwipsToPtString(nHeightTwips) + L"pt\" o:bullet=\"t\">");
+		m_oPicBullets.WriteString(L"<v:imagedata r:id=\"" + sRId + L"\" o:title=\"\"/></v:shape></w:pict></w:numPicBullet>");
+	}
 	bool NumberingWriter::IsEmpty()
 	{
 		return 0 == m_oANum.GetCurSize();
@@ -39,6 +74,7 @@ namespace Writers
 		if(IsEmpty()) return;
 
 		m_oWriter.WriteString(g_string_n_Start);
+		m_oWriter.Write(m_oPicBullets);//CT_Numbering: numPicBullet elements go first
 		m_oWriter.Write(m_oANum);
 		m_oWriter.Write(m_oNumList);
 		m_oWriter.WriteString(g_string_n_End);

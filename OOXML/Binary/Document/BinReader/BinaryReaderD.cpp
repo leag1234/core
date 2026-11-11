@@ -2991,6 +2991,7 @@ Binary_NumberingTableReader::Binary_NumberingTableReader(NSBinPptxRW::CBinaryFil
 	Binary_CommonReader(poBufferedStream), 
 	oBinary_pPrReader(poBufferedStream, oFileWriter), 
 	oBinary_rPrReader(poBufferedStream, oFileWriter),
+	m_oFileWriter(oFileWriter),
 	m_pNumbering(numbering)
 {
 }
@@ -3010,6 +3011,80 @@ int Binary_NumberingTableReader::ReadNumberingContent(BYTE type, long length, vo
 	else if ( c_oSerNumTypes::Nums == type )
 	{
 		READ1_DEF(length, res, this->ReadNums, poResult);
+	}
+	else if ( c_oSerNumTypes::NumPicBullets == type )
+	{
+		//the images of the picture bullets are relationships of word/numbering.xml
+		m_oBufferedStream.SetDstContentRels();
+
+		READ1_DEF(length, res, this->ReadNumPicBullets, poResult);
+
+		OOX::CPath fileRelsPath = m_oFileWriter.get_document_writer().m_sDir
+			+ FILE_SEPARATOR_STR + L"word"
+			+ (m_oFileWriter.m_bGlossaryMode ? (FILE_SEPARATOR_STR + std::wstring(L"glossary")) : L"")
+			+ FILE_SEPARATOR_STR + L"_rels"
+			+ FILE_SEPARATOR_STR + L"numbering.xml.rels";
+
+		m_oBufferedStream.SaveDstContentRels(fileRelsPath.GetPath());
+	}
+	else
+		res = c_oSerConstants::ReadUnknown;
+	return res;
+};
+int Binary_NumberingTableReader::ReadNumPicBullets(BYTE type, long length, void* poResult)
+{
+	int res = c_oSerConstants::ReadOk;
+	if ( c_oSerNumTypes::NumPicBullet == type )
+	{
+		SPicBullet oPicBullet;
+		READ2_DEF(length, res, this->ReadNumPicBullet, &oPicBullet);
+
+		if (oPicBullet.nId >= 0 && false == oPicBullet.sImage.empty())
+		{
+			//the same checks as for the pictures of the document (PPTX::Logic::Blip::fromPPTY): the image is in the media folder
+			OOX::CPath pathMedia(m_oBufferedStream.m_strFolder + FILE_SEPARATOR_STR + L"media");
+			std::wstring strPath = pathMedia.GetPath();
+
+			OOX::CPath pathImage;
+			pathImage = strPath + FILE_SEPARATOR_STR + oPicBullet.sImage;
+			std::wstring strImagePath = pathImage.GetPath();
+
+			if (std::wstring::npos != strImagePath.find(strPath))
+			{
+				std::vector<NSCommon::smart_ptr<OOX::File>> additionalFiles;
+				NSBinPptxRW::_relsGeneratorInfo oRelsGeneratorInfo = m_oBufferedStream.m_pRels->WriteImage(strImagePath, additionalFiles, L"", L"");
+
+				if (oRelsGeneratorInfo.nImageRId > 0)
+				{
+					m_oFileWriter.get_numbering_writer().AddPicBullet(oPicBullet.nId, L"rId" + std::to_wstring(oRelsGeneratorInfo.nImageRId), oPicBullet.nWidthTwips, oPicBullet.nHeightTwips);
+				}
+			}
+		}
+	}
+	else
+		res = c_oSerConstants::ReadUnknown;
+	return res;
+}
+int Binary_NumberingTableReader::ReadNumPicBullet(BYTE type, long length, void* poResult)
+{
+	int res = c_oSerConstants::ReadOk;
+	SPicBullet* pPicBullet = static_cast<SPicBullet*>(poResult);
+
+	if ( c_oSerNumTypes::NumPicBullet_Id == type )
+	{
+		pPicBullet->nId = m_oBufferedStream.GetLong();
+	}
+	else if ( c_oSerNumTypes::NumPicBullet_Image == type )
+	{
+		pPicBullet->sImage = m_oBufferedStream.GetString3(length);
+	}
+	else if ( c_oSerNumTypes::NumPicBullet_Width == type )
+	{
+		pPicBullet->nWidthTwips = m_oBufferedStream.GetLong();
+	}
+	else if ( c_oSerNumTypes::NumPicBullet_Height == type )
+	{
+		pPicBullet->nHeightTwips = m_oBufferedStream.GetLong();
 	}
 	else
 		res = c_oSerConstants::ReadUnknown;
@@ -3226,6 +3301,11 @@ int Binary_NumberingTableReader::ReadLevel(BYTE type, long length, void* poResul
 	{
 		odocLvl->m_oLegacy.Init();
 		READ1_DEF(length, res, this->ReadLvlLegacy, odocLvl->m_oLegacy.GetPointer());
+	}
+	else if ( c_oSerNumTypes::lvl_PicBulletId == type )
+	{
+		odocLvl->m_oLvlPicBulletId.Init();
+		odocLvl->m_oLvlPicBulletId->m_oVal = m_oBufferedStream.GetLong();
 	}
 	else
 		res = c_oSerConstants::ReadUnknown;

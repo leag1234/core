@@ -278,12 +278,19 @@ namespace OOX
 
 		private:
 			void ReadAttributes(XmlUtils::CXmlLiteReader& oReader);
+			void ReadPictureInfo(const std::wstring& sXml);
 
 		public:
 			nullable_int					m_oNumPicBulletId;
 
 			nullable<OOX::Logic::CDrawing>	m_oDrawing;
 			nullable<OOX::Logic::CPicture>	m_oVmlDrawing;
+
+			//the picture of the bullet: relationship id (of the numbering part) of the image and its size in points
+			//(v:shape style or wp:extent); empty / 0 if unknown
+			std::wstring					m_sImageRId;
+			double							m_dWidthPt;
+			double							m_dHeightPt;
 		};
 	} // Numbering
 } // OOX 

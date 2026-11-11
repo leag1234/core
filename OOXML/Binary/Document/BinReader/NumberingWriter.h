@@ -37,12 +37,17 @@ namespace Writers
 		std::wstring					m_sDir;
 
 	public:
+		NSStringUtils::CStringBuilder	m_oPicBullets;
 		NSStringUtils::CStringBuilder	m_oANum;
 		NSStringUtils::CStringBuilder	m_oNumList;
+
+		int								m_nPicBulletShapeId = 1025;
 
 		NumberingWriter(std::wstring sDir);
 
 		bool IsEmpty();
+		//w:numPicBullet with the picture of the relationship sRId (of word/numbering.xml.rels); size in twips, 0 - default
+		void AddPicBullet(int nId, const std::wstring& sRId, int nWidthTwips, int nHeightTwips);
 		void Write(bool bGlossary = false);
 	};
 }

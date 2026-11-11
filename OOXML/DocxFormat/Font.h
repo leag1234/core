@@ -52,6 +52,7 @@ namespace OOX
 	private:
 		void ReadAttributes(XmlUtils::CXmlLiteReader& oReader);
 		void ReadAttributes2(XmlUtils::CXmlLiteReader& oReader);
+		void ReadEmbed(XmlUtils::CXmlLiteReader& oReader, int nSlot);
 		void Reset();
 
 	public:
@@ -70,6 +71,12 @@ namespace OOX
 		nullable<SimpleTypes::CLongHexNumber>				m_oUsb1;
 		nullable<SimpleTypes::CLongHexNumber>				m_oUsb2;
 		nullable<SimpleTypes::CLongHexNumber>				m_oUsb3;
+
+		// Embedded font faces (w:embedRegular, w:embedBold, w:embedItalic, w:embedBoldItalic)
+		enum EEmbedSlot { embedRegular = 0, embedBold = 1, embedItalic = 2, embedBoldItalic = 3, embedCount = 4 };
+		std::wstring										m_arEmbedRId[embedCount];	// r:id, relationship of word/fontTable.xml
+		std::wstring										m_arEmbedKey[embedCount];	// w:fontKey, GUID used to obfuscate the file
+		std::wstring										m_arEmbedPath[embedCount];	// full path of the .odttf file, set by CFontTable
 	};
 
 }

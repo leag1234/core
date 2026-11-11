@@ -113,7 +113,11 @@ extern int g_nCurFormatVersion;
 		Font	= 0,
 		Name	= 1,
 		AltName	= 2,
-		Family	= 3
+		Family	= 3,
+		EmbedRegular	= 4,	// embedded font faces: Variable string, media path of the plain font file
+		EmbedBold		= 5,	// (e.g. "fonts/Name_regular.ttf"), the file is written to the media folder
+		EmbedItalic		= 6,
+		EmbedBoldItalic	= 7
 	};}
 	namespace c_oSerSigTypes{enum c_oSerSigTypes
 	{
@@ -186,7 +190,15 @@ extern int g_nCurFormatVersion;
 		LegacyIndent = 35,
 		LegacySpace = 36,
 		lvl_Jc = 37,
-		Nsid = 38
+		Nsid = 38,
+		//picture bullets (w:lvlPicBulletId, w:numPicBullet); keep the numbers in sync with sdkjs Serialize2.js
+		lvl_PicBulletId = 39,
+		NumPicBullets = 40,
+		NumPicBullet = 41,
+		NumPicBullet_Id = 42,
+		NumPicBullet_Image = 43,
+		NumPicBullet_Width = 44,//twips
+		NumPicBullet_Height = 45//twips
 	};}
 	namespace c_oSerOtherTableTypes{enum c_oSerOtherTableTypes
 	{

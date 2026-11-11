@@ -249,6 +249,7 @@ namespace BinDocxRW
 		BinaryCommonWriter m_oBcw;
 		Binary_pPrWriter bpPrs;
 		Binary_rPrWriter brPrs;
+		std::map<int, bool> m_mapPicBulletIds;//ids of the picture bullets written to the table
 	public:
 		BinaryNumberingTableWriter(ParamsWriter& oParamsWriter);
 		void Write(const OOX::CNumbering& numbering);

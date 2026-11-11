@@ -42,8 +42,10 @@
 #include "../../../../RtfFile/Format/ConvertationManager.h"
 
 #include "../../../DocxFormat/App.h"
+#include "../../../DocxFormat/Media/Image.h"
 #include "../../../DocxFormat/Core.h"
 #include "../../../DocxFormat/FontTable.h"
+#include "../../../DocxFormat/FontObfuscation.h"
 #include "../../../DocxFormat/CustomXml.h"
 #include "../../../DocxFormat/Diagram/DiagramData.h"
 
@@ -3025,6 +3027,77 @@ void BinaryNumberingTableWriter::Write(const OOX::CNumbering& numbering)
 void BinaryNumberingTableWriter::WriteNumberingContent(const OOX::CNumbering& numbering)
 {
 	int nCurPos = 0;
+	//NumPicBullets: pictures of the bullets. The item is written only if the numbering has pictures, a document without
+	//them keeps the same binary form as before
+	m_mapPicBulletIds.clear();
+	{
+		struct SPicBullet
+		{
+			int			nId;
+			std::wstring sImage;
+			int			nWidthTwips;
+			int			nHeightTwips;
+		};
+		std::vector<SPicBullet> aPicBullets;
+
+		for (size_t i = 0; i < numbering.m_arrNumPicBullet.size(); ++i)
+		{
+			const OOX::Numbering::CNumPicBullet* pPicBullet = numbering.m_arrNumPicBullet[i];
+			if (NULL == pPicBullet || false == pPicBullet->m_oNumPicBulletId.IsInit() || pPicBullet->m_sImageRId.empty())
+				continue;
+
+			//the image is a relationship of word/numbering.xml
+			smart_ptr<OOX::Image> pImage = numbering.Get<OOX::Image>(OOX::RId(pPicBullet->m_sImageRId));
+			if (false == pImage.is_init())
+				continue;
+
+			//the same way as the pictures of the document: the image is registered in the media of the binary document
+			double dW = -1.0;
+			double dH = -1.0;
+			NSShapeImageGen::CMediaInfo oMediaInfo = m_oBcw.m_oStream.m_pCommon->m_pMediaManager->WriteImage(pImage->filename().m_strFilename, dW, dH, std::wstring(), 0);
+
+			SPicBullet oPicBullet;
+			oPicBullet.nId = *pPicBullet->m_oNumPicBulletId;
+			oPicBullet.sImage = oMediaInfo.GetPath2();
+			oPicBullet.nWidthTwips = (int)(pPicBullet->m_dWidthPt * 20.0 + 0.5);
+			oPicBullet.nHeightTwips = (int)(pPicBullet->m_dHeightPt * 20.0 + 0.5);
+
+			if (oPicBullet.sImage.empty())
+				continue;
+
+			aPicBullets.push_back(oPicBullet);
+			m_mapPicBulletIds[oPicBullet.nId] = true;
+		}
+		if (false == aPicBullets.empty())
+		{
+			nCurPos = m_oBcw.WriteItemStart(c_oSerNumTypes::NumPicBullets);
+			for (size_t i = 0; i < aPicBullets.size(); ++i)
+			{
+				int nCurPos2 = m_oBcw.WriteItemStart(c_oSerNumTypes::NumPicBullet);
+
+				m_oBcw.m_oStream.WriteBYTE(c_oSerNumTypes::NumPicBullet_Id);
+				m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Long);
+				m_oBcw.m_oStream.WriteLONG(aPicBullets[i].nId);
+
+				m_oBcw.m_oStream.WriteBYTE(c_oSerNumTypes::NumPicBullet_Image);
+				m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Variable);
+				m_oBcw.m_oStream.WriteStringW(aPicBullets[i].sImage);
+
+				if (aPicBullets[i].nWidthTwips > 0 && aPicBullets[i].nHeightTwips > 0)
+				{
+					m_oBcw.m_oStream.WriteBYTE(c_oSerNumTypes::NumPicBullet_Width);
+					m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Long);
+					m_oBcw.m_oStream.WriteLONG(aPicBullets[i].nWidthTwips);
+
+					m_oBcw.m_oStream.WriteBYTE(c_oSerNumTypes::NumPicBullet_Height);
+					m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Long);
+					m_oBcw.m_oStream.WriteLONG(aPicBullets[i].nHeightTwips);
+				}
+				m_oBcw.WriteItemEnd(nCurPos2);
+			}
+			m_oBcw.WriteItemEnd(nCurPos);
+		}
+	}
 	//AbstractNums
 	nCurPos = m_oBcw.WriteItemStart(c_oSerNumTypes::AbstractNums);
 	WriteAbstractNums(numbering);
@@ -3293,6 +3366,14 @@ void BinaryNumberingTableWriter::WriteLevel(const OOX::Numbering::CLvl& lvl)
 		nCurPos = m_oBcw.WriteItemWithLengthStart();
 		WriteLvlLegacy(lvl.m_oLegacy.get());
 		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	}
+	//LvlPicBulletId: only if the picture is known (written to the NumPicBullets table)
+	if (lvl.m_oLvlPicBulletId.IsInit() && lvl.m_oLvlPicBulletId->m_oVal.IsInit() &&
+		m_mapPicBulletIds.end() != m_mapPicBulletIds.find(*lvl.m_oLvlPicBulletId->m_oVal))
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerNumTypes::lvl_PicBulletId);
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Long);
+		m_oBcw.m_oStream.WriteLONG(*lvl.m_oLvlPicBulletId->m_oVal);
 	}
 }
 void BinaryNumberingTableWriter::WriteLvlLegacy(const ComplexTypes::Word::CLvlLegacy& lvlLegacy)
@@ -9809,6 +9890,93 @@ std::wstring BinaryFileWriter::WriteFileHeader(long nDataSize, int version)
 	std::wstring sHeader = std::wstring(g_sFormatSignature) + L";v" + std::to_wstring(version) + L";" + std::to_wstring(nDataSize) + L";";
 	return sHeader;
 }
+
+namespace
+{
+	// Embedded fonts (word/fonts/*.odttf): de-obfuscates the font file and writes the plain font into the media
+	// folder of the converted document (media/fonts/<name>.ttf). Returns the media-relative path or an empty string.
+	// Anything wrong (missing file, too large, bad key, no sfnt signature) just skips the font.
+	struct EmbeddedFontWriter
+	{
+		std::wstring m_sMediaDir;
+		size_t m_nTotal;
+		std::map<std::wstring, std::wstring> m_mapDone;	// odttf path -> media path
+		std::map<std::wstring, int> m_mapNames;
+
+		EmbeddedFontWriter(const std::wstring& sMediaDir) : m_sMediaDir(sMediaDir), m_nTotal(0) {}
+
+		static std::wstring SafeName(const std::wstring& sName)
+		{
+			std::wstring sRes;
+			for (size_t i = 0; i < sName.size() && sRes.size() < 48; ++i)
+			{
+				wchar_t c = sName[i];
+				if ((c >= L'a' && c <= L'z') || (c >= L'A' && c <= L'Z') || (c >= L'0' && c <= L'9') || c == L'_' || c == L'-')
+					sRes += c;
+				else if (c == L' ' || c == L'.')
+					sRes += L'_';
+			}
+			if (sRes.empty())
+				sRes = L"font";
+			return sRes;
+		}
+		std::wstring Write(const std::wstring& sFontName, int nSlot, const std::wstring& sPath, const std::wstring& sKey)
+		{
+			if (m_sMediaDir.empty() || sPath.empty())
+				return L"";
+			std::wstring sMapKey = sPath + L"|" + sKey;
+			std::map<std::wstring, std::wstring>::iterator it = m_mapDone.find(sMapKey);
+			if (it != m_mapDone.end())
+				return it->second;
+			m_mapDone[sMapKey] = L"";	// failures are remembered too
+
+			unsigned char aKey[16];
+			if (!OOX::FontObfuscation::GuidToKey(sKey, aKey))
+				return L"";
+
+			NSFile::CFileBinary oFile;
+			if (!oFile.OpenFile(sPath))
+				return L"";
+			long nSize = oFile.GetFileSize();
+			if (nSize < 32 || (size_t)nSize > OOX::FontObfuscation::c_nMaxFontBytes || m_nTotal + (size_t)nSize > OOX::FontObfuscation::c_nMaxTotalBytes)
+			{
+				oFile.CloseFile();
+				return L"";
+			}
+			std::vector<unsigned char> aData((size_t)nSize);
+			DWORD nRead = 0;
+			bool bRead = oFile.ReadFile(&aData[0], (DWORD)nSize, nRead);
+			oFile.CloseFile();
+			if (!bRead || nRead != (DWORD)nSize)
+				return L"";
+			if (!OOX::FontObfuscation::Xor(&aData[0], aData.size(), aKey) || !OOX::FontObfuscation::IsSfnt(&aData[0], aData.size()))
+				return L"";
+
+			const wchar_t* aSlotNames[4] = { L"regular", L"bold", L"italic", L"bolditalic" };
+			std::wstring sBase = SafeName(sFontName) + L"_" + aSlotNames[nSlot & 3];
+			int nCount = m_mapNames[sBase]++;
+			if (nCount > 0)
+				sBase += L"_" + std::to_wstring(nCount);
+			std::wstring sExt = L".ttf";
+			if (aData[0] == 'O') sExt = L".otf";
+			else if (aData[0] == 't' && aData[1] == 't') sExt = L".ttc";
+
+			NSDirectory::CreateDirectory(m_sMediaDir + FILE_SEPARATOR_STR + L"fonts");
+			NSFile::CFileBinary oOut;
+			if (!oOut.CreateFileW(m_sMediaDir + FILE_SEPARATOR_STR + L"fonts" + FILE_SEPARATOR_STR + sBase + sExt))
+				return L"";
+			bool bWritten = oOut.WriteFile(&aData[0], (DWORD)aData.size());
+			oOut.CloseFile();
+			if (!bWritten)
+				return L"";
+
+			m_nTotal += aData.size();
+			m_mapDone[sMapKey] = L"fonts/" + sBase + sExt;
+			return m_mapDone[sMapKey];
+		}
+	};
+}
+
 void BinaryFileWriter::WriteMainTableStart(bool bSigTable)
 {
 	int nTableCount = 128;//Deliberately set a large number so as not to increase it when adding another table.
@@ -10112,6 +10280,8 @@ void BinaryFileWriter::intoBindoc(const std::wstring& sSrcPath)
 		// alternate name to replace a font that is not installed, as Word does.
 		nCurPos = this->WriteTableStart(BinDocxRW::c_oSerTableTypes::FontTable);
 		int nStart = m_oBcw.WriteItemWithLengthStart();
+		EmbeddedFontWriter oEmbeddedFonts(m_oBcw.m_oStream.m_pCommon && m_oBcw.m_oStream.m_pCommon->m_pMediaManager ?
+			m_oBcw.m_oStream.m_pCommon->m_pMediaManager->m_strDstMedia : std::wstring());
 		for (size_t i = 0; i < pDocx->m_oMain.fontTable->m_arrFonts.size(); ++i)
 		{
 			OOX::CFont* pFont = pDocx->m_oMain.fontTable->m_arrFonts[i];
@@ -10134,6 +10304,16 @@ void BinaryFileWriter::intoBindoc(const std::wstring& sSrcPath)
 				// substitute a missing script font by a script font
 				nItem = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::Family);
 				m_oBcw.m_oStream.WriteStringW3(pFont->m_oFamily->ToString());
+				m_oBcw.WriteItemEnd(nItem);
+			}
+			for (int nSlot = 0; nSlot < OOX::CFont::embedCount; ++nSlot)
+			{
+				// embedded faces: only written when the font was extracted (no item otherwise)
+				std::wstring sMedia = oEmbeddedFonts.Write(pFont->m_sName, nSlot, pFont->m_arEmbedPath[nSlot], pFont->m_arEmbedKey[nSlot]);
+				if (sMedia.empty())
+					continue;
+				nItem = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::EmbedRegular + nSlot);
+				m_oBcw.m_oStream.WriteStringW3(sMedia);
 				m_oBcw.WriteItemEnd(nItem);
 			}
 			m_oBcw.WriteItemEnd(nFont);

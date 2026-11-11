@@ -113,6 +113,22 @@ namespace OOX
 			{
 				ReadAttributes2( oReader );
 			}
+			if ( sName == L"w:embedRegular")
+			{
+				ReadEmbed( oReader, embedRegular );
+			}
+			if ( sName == L"w:embedBold")
+			{
+				ReadEmbed( oReader, embedBold );
+			}
+			if ( sName == L"w:embedItalic")
+			{
+				ReadEmbed( oReader, embedItalic );
+			}
+			if ( sName == L"w:embedBoldItalic")
+			{
+				ReadEmbed( oReader, embedBoldItalic );
+			}
 
 		}
 	}
@@ -198,8 +214,25 @@ namespace OOX
 			WritingElement_ReadAttributes_Read_else_if( oReader, _T("w:usb3"),	m_oUsb3 )
 		WritingElement_ReadAttributes_End( oReader )
 	}
+	void CFont::ReadEmbed(XmlUtils::CXmlLiteReader& oReader, int nSlot)
+	{
+		std::wstring sRId, sKey;
+		WritingElement_ReadAttributes_Start( oReader )
+			WritingElement_ReadAttributes_Read_if     ( oReader, L"r:id",		sRId )
+			WritingElement_ReadAttributes_Read_else_if( oReader, L"w:fontKey",	sKey )
+		WritingElement_ReadAttributes_End( oReader )
+
+		m_arEmbedRId[nSlot] = sRId;
+		m_arEmbedKey[nSlot] = sKey;
+	}
 	void CFont::Reset()
 		{
+			for (int i = 0; i < embedCount; ++i)
+			{
+				m_arEmbedRId[i].clear();
+				m_arEmbedKey[i].clear();
+				m_arEmbedPath[i].clear();
+			}
 			m_sName = L"Arial";
 			m_oCharset.reset();
 			m_oFamily.reset();

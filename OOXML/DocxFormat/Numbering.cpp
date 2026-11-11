@@ -24,6 +24,7 @@
  */
 
 #include "Numbering.h"
+#include <cwchar>
 #include "Docx.h"
 #include "../../DesktopEditor/common/File.h"
 
@@ -689,7 +690,108 @@ namespace OOX
 		// NumPicBullet 17.9.21 (Part 1)
 		//--------------------------------------------------------------------------------
 
-		CNumPicBullet::CNumPicBullet()
+		//Reads the size of v:shape style ("width:9pt;height:9pt") and finds the image relationship id of w:pict / w:drawing
+		static double ParseCssLengthPt(const std::wstring& sValue)
+		{
+			size_t nStart = sValue.find_first_not_of(L" \t\r\n");
+			if (std::wstring::npos == nStart)
+				return 0;
+
+			const wchar_t* pBegin = sValue.c_str() + nStart;
+			wchar_t* pEnd = NULL;
+			double dValue = wcstod(pBegin, &pEnd);
+			if (NULL == pEnd || pEnd == pBegin)
+				return 0;
+
+			std::wstring sUnit(pEnd);
+			size_t nUnitEnd = sUnit.find_last_not_of(L" \t\r\n");
+			sUnit = (std::wstring::npos == nUnitEnd) ? std::wstring() : sUnit.substr(0, nUnitEnd + 1);
+
+			if (L"pt" == sUnit)	return dValue;
+			if (L"px" == sUnit)	return dValue * 0.75;
+			if (L"in" == sUnit)	return dValue * 72.0;
+			if (L"cm" == sUnit)	return dValue * 72.0 / 2.54;
+			if (L"mm" == sUnit)	return dValue * 72.0 / 25.4;
+			return 0;
+		}
+		static void ParseVmlStyleSize(const std::wstring& sStyle, double& dWidthPt, double& dHeightPt)
+		{
+			size_t nPos = 0;
+			while (nPos < sStyle.length())
+			{
+				size_t nEnd = sStyle.find(L';', nPos);
+				if (std::wstring::npos == nEnd)
+					nEnd = sStyle.length();
+
+				std::wstring sItem = sStyle.substr(nPos, nEnd - nPos);
+				size_t nColon = sItem.find(L':');
+				if (std::wstring::npos != nColon)
+				{
+					std::wstring sKey = sItem.substr(0, nColon);
+					size_t nKeyStart = sKey.find_first_not_of(L" \t\r\n");
+					size_t nKeyEnd = sKey.find_last_not_of(L" \t\r\n");
+					sKey = (std::wstring::npos == nKeyStart) ? std::wstring() : sKey.substr(nKeyStart, nKeyEnd - nKeyStart + 1);
+
+					if (L"width" == sKey)
+						dWidthPt = ParseCssLengthPt(sItem.substr(nColon + 1));
+					else if (L"height" == sKey)
+						dHeightPt = ParseCssLengthPt(sItem.substr(nColon + 1));
+				}
+				nPos = nEnd + 1;
+			}
+		}
+		static void ScanPictureNode(XmlUtils::CXmlLiteReader& oReader, std::wstring& sRId, double& dWidthPt, double& dHeightPt)
+		{
+			std::wstring sName = oReader.GetName();
+
+			bool bShape = (L"v:shape" == sName);
+			bool bImageData = (L"v:imagedata" == sName);
+			bool bBlip = (L"a:blip" == sName);
+			bool bExtent = (L"wp:extent" == sName);
+
+			if ((bShape || bImageData || bBlip || bExtent) && oReader.GetAttributesCount() > 0 && oReader.MoveToFirstAttribute())
+			{
+				std::wstring sAttr = oReader.GetName();
+				while (!sAttr.empty())
+				{
+					if (bShape && L"style" == sAttr)
+					{
+						ParseVmlStyleSize(oReader.GetText(), dWidthPt, dHeightPt);
+					}
+					else if (bImageData && sRId.empty() && (L"r:id" == sAttr || L"o:relid" == sAttr))
+					{
+						sRId = oReader.GetText();
+					}
+					else if (bBlip && sRId.empty() && L"r:embed" == sAttr)
+					{
+						sRId = oReader.GetText();
+					}
+					else if (bExtent && L"cx" == sAttr)
+					{
+						dWidthPt = wcstod(oReader.GetText().c_str(), NULL) / 12700.0;
+					}
+					else if (bExtent && L"cy" == sAttr)
+					{
+						dHeightPt = wcstod(oReader.GetText().c_str(), NULL) / 12700.0;
+					}
+
+					if (!oReader.MoveToNextAttribute())
+						break;
+					sAttr = oReader.GetName();
+				}
+				oReader.MoveToElement();
+			}
+
+			if (oReader.IsEmptyNode())
+				return;
+
+			int nDepth = oReader.GetDepth();
+			while (oReader.ReadNextSiblingNode(nDepth))
+			{
+				ScanPictureNode(oReader, sRId, dWidthPt, dHeightPt);
+			}
+		}
+		CNumPicBullet::CNumPicBullet() : m_dWidthPt(0), m_dHeightPt(0)
 		{
 		}
 		CNumPicBullet::~CNumPicBullet()
@@ -703,6 +805,24 @@ namespace OOX
 
 			WritingElement_ReadNode( oNode, oChild, _T("w:drawing"), m_oDrawing );
 		}
+		void CNumPicBullet::ReadPictureInfo(const std::wstring& sXml)
+		{
+			if (sXml.empty())
+				return;
+
+			std::wstring sBegin(L"<root xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:w10=\"urn:schemas-microsoft-com:office:word\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">");
+			std::wstring sEnd(L"</root>");
+
+			XmlUtils::CXmlLiteReader oSubReader;
+			if (!oSubReader.FromString(sBegin + sXml + sEnd))
+				return;
+			if (!oSubReader.ReadNextNode())//root
+				return;
+			if (!oSubReader.ReadNextNode())//w:pict or w:drawing
+				return;
+
+			ScanPictureNode(oSubReader, m_sImageRId, m_dWidthPt, m_dHeightPt);
+		}
 		void CNumPicBullet::fromXML(XmlUtils::CXmlLiteReader& oReader)
 		{
 			ReadAttributes( oReader );
@@ -714,13 +834,18 @@ namespace OOX
 			while( oReader.ReadNextSiblingNode( nParentDepth ) )
 			{
 				std::wstring sName = oReader.GetName();
+				//GetOuterXml moves the reader to the end of the element, so the picture is read from the parsed objects
 				if ( _T("w:drawing") == sName )
 				{
 					m_oDrawing = oReader;
+					if (m_sImageRId.empty())
+						ReadPictureInfo(m_oDrawing->toXML());
 				}
 				if ( _T("w:pict") == sName )
 				{
 					m_oVmlDrawing = oReader;
+					if (m_sImageRId.empty() && m_oVmlDrawing->m_sXml.IsInit())
+						ReadPictureInfo(*m_oVmlDrawing->m_sXml);
 				}
 			}
 		}
@@ -728,10 +853,19 @@ namespace OOX
 		{
 			if (false == m_oNumPicBulletId.IsInit()) return L"";
 
-			std::wstring sResult = L"<w:numPicBullet ";
-
-			sResult += std::to_wstring(*m_oNumPicBulletId) + L">";
-			sResult += m_oDrawing->toXML();
+			std::wstring sResult = L"<w:numPicBullet w:numPicBulletId=\"" + std::to_wstring(*m_oNumPicBulletId) + L"\">";
+			if (m_oDrawing.IsInit())
+			{
+				sResult += m_oDrawing->toXML();
+			}
+			if (m_oVmlDrawing.IsInit())
+			{
+				//the original xml of w:pict is kept by CPicture
+				if (m_oVmlDrawing->m_sXml.IsInit())
+					sResult += *m_oVmlDrawing->m_sXml;
+				else
+					sResult += m_oVmlDrawing->toXML();
+			}
 			sResult += L"</w:numPicBullet>";
 
 			return sResult;
@@ -905,6 +1039,13 @@ xmlns:w14=\"http://schemas.microsoft.com/office/word/2010/wordml\" \
 xmlns:w15=\"http://schemas.microsoft.com/office/word/2012/wordml\" \
 mc:Ignorable=\"w14 w15\">");
 
+		//CT_Numbering: numPicBullet elements go first
+		for (unsigned int nIndex = 0; nIndex < m_arrNumPicBullet.size(); nIndex++ )
+		{
+			if (m_arrNumPicBullet[nIndex])
+				sXml += m_arrNumPicBullet[nIndex]->toXML();
+		}
+
 		for (unsigned int nIndex = 0; nIndex < m_arrAbstractNum.size(); nIndex++ )
 		{
 			if (m_arrAbstractNum[nIndex])
@@ -922,12 +1063,6 @@ mc:Ignorable=\"w14 w15\">");
 			sXml += _T("<w:numIdMacAtCleanup ");
 			sXml += m_oNumIdMacAtCleanup->ToString();
 			sXml += _T("/>");
-		}
-
-		for (unsigned int nIndex = 0; nIndex < m_arrNumPicBullet.size(); nIndex++ )
-		{
-			if (m_arrNumPicBullet[nIndex])
-				sXml += m_arrNumPicBullet[nIndex]->toXML();
 		}
 
 		sXml += _T("</w:numbering>");

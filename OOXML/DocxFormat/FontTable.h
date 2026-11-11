@@ -52,6 +52,7 @@ namespace OOX
 		bool Find(std::wstring &sFontName, CFont *oFont);
 
 		virtual void read(const CPath &oFilePath);
+		void ResolveEmbeddedFonts(const CPath &oFilePath);
 		virtual void write(const CPath &oFilePath, const CPath &oDirectory, CContentTypes& oContent) const;
 
 		virtual const FileType type() const;

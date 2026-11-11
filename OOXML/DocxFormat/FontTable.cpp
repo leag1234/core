@@ -28,6 +28,7 @@
 #include "../../DesktopEditor/common/Directory.h"
 #include "FileTypes.h"
 #include "Docx.h"
+#include "Rels.h"
 
 namespace OOX
 {
@@ -110,6 +111,47 @@ namespace OOX
 		if ( _T("w:fonts") == sName)
 		{
 			fromXML(oReader);
+		}
+		ResolveEmbeddedFonts( oFilePath );
+	}
+	void CFontTable::ResolveEmbeddedFonts(const CPath &oFilePath)
+	{
+		// word/_rels/fontTable.xml.rels: relationships of the embedded (obfuscated) font files
+		bool bAny = false;
+		for (size_t i = 0; i < m_arrFonts.size() && !bAny; ++i)
+		{
+			if (!m_arrFonts[i]) continue;
+			for (int k = 0; k < CFont::embedCount; ++k)
+				if (!m_arrFonts[i]->m_arEmbedRId[k].empty()) bAny = true;
+		}
+		if (!bAny)
+			return;
+
+		CRels oRels( oFilePath );
+		CPath oDir = oFilePath.GetDirectory();
+
+		for (size_t i = 0; i < m_arrFonts.size(); ++i)
+		{
+			if (!m_arrFonts[i]) continue;
+			for (int k = 0; k < CFont::embedCount; ++k)
+			{
+				CFont* pFont = m_arrFonts[i];
+				if (pFont->m_arEmbedRId[k].empty()) continue;
+
+				Rels::CRelationShip* pRel = NULL;
+				oRels.GetRel( OOX::RId( pFont->m_arEmbedRId[k] ), &pRel );
+				if (!pRel || pRel->IsExternal())
+					continue;
+
+				std::wstring sTarget = pRel->Target().GetPath();
+				// the target must stay inside the package: relative, no parent directory steps
+				if (sTarget.empty() || sTarget.find( L".." ) != std::wstring::npos)
+					continue;
+				if (sTarget[0] == L'/' || sTarget[0] == L'\\' || (sTarget.size() > 1 && sTarget[1] == L':'))
+					continue;
+
+				pFont->m_arEmbedPath[k] = ( oDir / pRel->Target() ).GetPath();
+			}
 		}
 	}
 	void CFontTable::write(const CPath &oFilePath, const CPath &oDirectory, CContentTypes& oContent) const

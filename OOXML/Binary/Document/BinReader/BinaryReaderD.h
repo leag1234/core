@@ -168,11 +168,23 @@ class Binary_NumberingTableReader : public Binary_CommonReader
 	Binary_pPrReader oBinary_pPrReader;
 	Binary_rPrReader oBinary_rPrReader;
 	
+	Writers::FileWriter& m_oFileWriter;
 	OOX::CNumbering *m_pNumbering;
 public:
+	struct SPicBullet
+	{
+		int				nId;
+		std::wstring	sImage;
+		int				nWidthTwips;
+		int				nHeightTwips;
+
+		SPicBullet() : nId(-1), nWidthTwips(0), nHeightTwips(0) {}
+	};
 	Binary_NumberingTableReader(NSBinPptxRW::CBinaryFileReader& poBufferedStream, Writers::FileWriter& oFileWriter, OOX::CNumbering *numbering);
 	int Read();
 	int ReadNumberingContent(BYTE type, long length, void* poResult);
+	int ReadNumPicBullets(BYTE type, long length, void* poResult);
+	int ReadNumPicBullet(BYTE type, long length, void* poResult);
 	int ReadNums(BYTE type, long length, void* poResult);
 	int ReadNum(BYTE type, long length, void* poResult);
 	int ReadLvlOverride(BYTE type, long length, void* poResult);
