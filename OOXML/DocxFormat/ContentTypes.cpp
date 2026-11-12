@@ -78,6 +78,7 @@ namespace OOX
 			m_mTable.insert(std::make_pair(L"vml", L"application/vnd.openxmlformats-officedocument.vmlDrawing"));
 			m_mTable.insert(std::make_pair(L"vsd", L"application/vnd.visio"));
 			m_mTable.insert(std::make_pair(L"vsdx", L"application/vnd.ms-visio.drawing"));
+			m_mTable.insert(std::make_pair(L"odttf", L"application/vnd.openxmlformats-officedocument.obfuscatedFont"));
 		}
 		const std::wstring CExtensionTable::operator[] (const std::wstring& sExtension) const
 		{

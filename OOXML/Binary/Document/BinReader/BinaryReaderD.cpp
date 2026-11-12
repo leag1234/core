@@ -1110,6 +1110,16 @@ int Binary_pPrReader::ReadContent(BYTE type, long length, void* poResult)
 		pPPr->m_oBidi.Init();
 		pPPr->m_oBidi->m_oVal.FromBool(m_oBufferedStream.GetBool());
 	}break;
+	case c_oSerProp_pPrType::AutoSpaceDE:
+	{
+		pPPr->m_oAutoSpaceDE.Init();
+		pPPr->m_oAutoSpaceDE->m_oVal.FromBool(m_oBufferedStream.GetBool());
+	}break;
+	case c_oSerProp_pPrType::AutoSpaceDN:
+	{
+		pPPr->m_oAutoSpaceDN.Init();
+		pPPr->m_oAutoSpaceDN->m_oVal.FromBool(m_oBufferedStream.GetBool());
+	}break;
 	default:
 		res = c_oSerConstants::ReadUnknown;
 		break;
@@ -3813,6 +3823,64 @@ int Binary_CustomsTableReader::ReadCustomContent(BYTE type, long length, void* p
 	{
 		pCustomXMLProps->m_oCustomXmlContentA = m_oBufferedStream.GetString2A();
 	}
+	else
+		res = c_oSerConstants::ReadUnknown;
+	return res;
+}
+Binary_FontTableReader::Binary_FontTableReader(NSBinPptxRW::CBinaryFileReader& poBufferedStream, Writers::FileWriter& oFileWriter)
+	: Binary_CommonReader(poBufferedStream), m_oFileWriter(oFileWriter)
+{
+}
+int Binary_FontTableReader::Read()
+{
+	int res = c_oSerConstants::ReadOk;
+	READ_TABLE_DEF(res, this->ReadFont, NULL);
+	return res;
+}
+int Binary_FontTableReader::ReadFont(BYTE type, long length, void* poResult)
+{
+	int res = c_oSerConstants::ReadOk;
+	if (c_oSerFontTableTypes::Font == type)
+	{
+		SFont oFont;
+		READ1_DEF(length, res, this->ReadFontContent, &oFont);
+		if (c_oSerConstants::ReadOk != res)
+			return res;
+
+		// the plain font files are in the media folder of the converted document, and nowhere else
+		OOX::CPath pathMedia(m_oBufferedStream.m_strFolder + FILE_SEPARATOR_STR + L"media");
+		std::wstring strMedia = pathMedia.GetPath();
+		for (int nSlot = 0; nSlot < 4; ++nSlot)
+		{
+			const std::wstring& sPath = oFont.aPath[nSlot];
+			// same shape as written on open: fonts/<safe name>.ttf|otf|ttc, no parent directory, no separators beyond the first
+			if (oFont.sName.empty() || sPath.size() < 7 || sPath.compare(0, 6, L"fonts/") != 0 || std::wstring::npos != sPath.find(L"..") ||
+				std::wstring::npos != sPath.find(L"\\") || std::wstring::npos != sPath.find(L'/', 6) || oFont.aKey[nSlot].empty())
+				continue;
+			OOX::CPath pathFont;
+			pathFont = strMedia + FILE_SEPARATOR_STR + sPath;
+			std::wstring strFontPath = pathFont.GetPath();
+			if (std::wstring::npos == strFontPath.find(strMedia))
+				continue;
+			m_oFileWriter.get_font_table_writer().AddEmbeddedFace(oFont.sName, nSlot, oFont.aKey[nSlot], 0 != (oFont.nSubsetted & (1 << nSlot)), strFontPath);
+		}
+	}
+	else
+		res = c_oSerConstants::ReadUnknown;
+	return res;
+}
+int Binary_FontTableReader::ReadFontContent(BYTE type, long length, void* poResult)
+{
+	int res = c_oSerConstants::ReadOk;
+	SFont* pFont = static_cast<SFont*>(poResult);
+	if (c_oSerFontTableTypes::Name == type)
+		pFont->sName = m_oBufferedStream.GetString3(length);
+	else if (type >= c_oSerFontTableTypes::EmbedRegular && type <= c_oSerFontTableTypes::EmbedBoldItalic)
+		pFont->aPath[type - c_oSerFontTableTypes::EmbedRegular] = m_oBufferedStream.GetString3(length);
+	else if (type >= c_oSerFontTableTypes::EmbedKeyRegular && type <= c_oSerFontTableTypes::EmbedKeyBoldItalic)
+		pFont->aKey[type - c_oSerFontTableTypes::EmbedKeyRegular] = m_oBufferedStream.GetString3(length);
+	else if (c_oSerFontTableTypes::EmbedSubsetted == type && length >= 1)
+		pFont->nSubsetted = m_oBufferedStream.GetUChar();
 	else
 		res = c_oSerConstants::ReadUnknown;
 	return res;
@@ -8379,6 +8447,20 @@ int Binary_DocumentTableReader::ReadRun(BYTE type, long length, void* poResult)
 		res = c_oSerConstants::ReadUnknown;
 	return res;
 }
+int Binary_DocumentTableReader::ReadPTab(BYTE type, long length, void* poResult)
+{
+	std::wstring* aPTab = static_cast<std::wstring*>(poResult);
+	int res = c_oSerConstants::ReadOk;
+	if (c_oSerPTabType::Alignment == type)
+		aPTab[0] = m_oBufferedStream.GetString3(length);
+	else if (c_oSerPTabType::RelativeTo == type)
+		aPTab[1] = m_oBufferedStream.GetString3(length);
+	else if (c_oSerPTabType::Leader == type)
+		aPTab[2] = m_oBufferedStream.GetString3(length);
+	else
+		res = c_oSerConstants::ReadUnknown;
+	return res;
+}
 int Binary_DocumentTableReader::ReadRunContent(BYTE type, long length, void* poResult)
 {
 	int res = c_oSerConstants::ReadOk;
@@ -8402,6 +8484,27 @@ int Binary_DocumentTableReader::ReadRunContent(BYTE type, long length, void* poR
 	else if (c_oSerRunType::tab == type)
 	{
         GetCurrentStringWriter().WriteString(std::wstring(_T("<w:tab/>")));
+	}
+	else if (c_oSerRunType::ptab == type)
+	{
+		// [alignment, relativeTo, leader]
+		std::wstring aPTab[3];
+		READ1_DEF(length, res, this->ReadPTab, aPTab);
+		static const wchar_t* const aAlignments[] = {L"left", L"center", L"right", NULL};
+		static const wchar_t* const aRelativeTo[] = {L"margin", L"indent", NULL};
+		static const wchar_t* const aLeaders[] = {L"none", L"dot", L"hyphen", L"underscore", L"middleDot", NULL};
+		const wchar_t* const* aAllowed[3] = {aAlignments, aRelativeTo, aLeaders};
+		const wchar_t* aNames[3] = {L"alignment", L"relativeTo", L"leader"};
+		std::wstring sXml = L"<w:ptab";
+		for (int i = 0; i < 3; ++i)
+		{
+			// only known values are written, anything else falls back to the first (default) one
+			const wchar_t* sValue = aAllowed[i][0];
+			for (int j = 0; aAllowed[i][j]; ++j)
+				if (aPTab[i] == aAllowed[i][j]) sValue = aAllowed[i][j];
+			sXml += L" w:" + std::wstring(aNames[i]) + L"=\"" + sValue + L"\"";
+		}
+		GetCurrentStringWriter().WriteString(sXml + L"/>");
 	}
 	else if (c_oSerRunType::cr == type)
 	{
@@ -10657,6 +10760,12 @@ int BinaryFileReader::ReadMainTable()
 			}
 			else res = c_oSerConstants::ReadUnknown;
 		}break;
+		case c_oSerTableTypes::FontTable:
+		{
+			// fonts embedded in the source document are kept (the main document only, the glossary has none)
+			if (false == m_oFileWriter.m_bGlossaryMode)
+				res = Binary_FontTableReader(m_oBufferedStream, m_oFileWriter).Read();
+		}break;
 		case c_oSerTableTypes::Customs:
 		{
 			OOX::CPath pathCustomXml = m_oFileWriter.get_document_writer().m_sDir + FILE_SEPARATOR_STR + L"customXml";
@@ -10711,6 +10820,8 @@ int BinaryFileReader::ReadMainTable()
 		m_oFileWriter.m_pDrawingConverter->Registration(L"application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml",
 			L"/word" + std::wstring(m_oFileWriter.m_bGlossaryMode ? L"/glossary" : L""), L"fontTable.xml");
 		m_oFileWriter.m_pDrawingConverter->Registration(L"application/vnd.openxmlformats-officedocument.theme+xml",	L"/word/theme", L"theme1.xml");
+		if (false == m_oFileWriter.m_bGlossaryMode && m_oFileWriter.get_font_table_writer().HasEmbedded())
+			m_oFileWriter.m_pDrawingConverter->GetContentTypes()->AddDefault(L"odttf");
 
 		if (false == m_oFileWriter.m_bGlossaryMode && false == m_oFileWriter.IsEmptyGlossary())
 		{
@@ -10807,6 +10918,14 @@ int BinaryFileReader::ReadMainTable()
 		oCommentsWriter.setElements(sContent, sContentEx, sContentExtensible, sContentsId, sPeople, sDocumentContent, sDocumentContentEx, sDocumentContentExtensible, sDocumentContentsId, sDocumentPeople, sContentUserData);
 //------------------------------------------------------------------------------------------------------------------------
 //settings
+		if (false == m_oFileWriter.m_bGlossaryMode && m_oFileWriter.get_font_table_writer().HasEmbedded())
+		{
+			// the document carries embedded fonts: say so in the settings, as Word does (unless the settings already do)
+			if (false == oSettings.m_oEmbedTrueTypeFonts.IsInit())
+				oSettings.m_oEmbedTrueTypeFonts.Init();
+			if (false == oSettings.m_oSaveSubsetFonts.IsInit() && m_oFileWriter.get_font_table_writer().HasSubsettedEmbedded())
+				oSettings.m_oSaveSubsetFonts.Init();
+		}
 		m_oFileWriter.get_settings_writer().AddSetting(oSettings.toXML());
 //------------------------------------------------------------------------------------------------------------------------
 

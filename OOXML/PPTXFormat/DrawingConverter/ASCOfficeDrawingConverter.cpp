@@ -2502,6 +2502,26 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			}
 		}
 
+		if (bIsTop && pShape && pShape->oTextBoxBodyPr.IsInit() && pPPTShape->IsWordArt() && !pPPTShape->m_textPath.bTrim &&
+			pShape->oTextBoxBodyPr->fromWordArt.get_value_or(false) && pSpPr->xfrm.IsInit() &&
+			pSpPr->xfrm->extX.IsInit() && pSpPr->xfrm->extY.IsInit())
+		{
+			// VML text path (not trimmed) scales the em box of the font to the shape height, so the glyph ink covers only the
+			// middle of the shape. DrawingML warped text (textPlain) fits the ink of the text to the text rectangle instead and
+			// Word then draws it larger and shifted. Shrink the text rectangle by the usual space above the capital letters and
+			// below the baseline (proportions measured against Word's rendering of a Calibri watermark).
+			int nW = *pSpPr->xfrm->extX;
+			int nH = *pSpPr->xfrm->extY;
+			// Word places the VML ink differently once the shape is turned by a diagonal angle (the usual watermark
+			// rotation, 45 or 315 degrees); the second set is the measured fit for those two angles only.
+			int nRot = pSpPr->xfrm->rot.get_value_or(0);
+			bool bDiagonal = (nRot == 45 * 60000 || nRot == 315 * 60000);
+			pShape->oTextBoxBodyPr->tIns = (int)(nH * (bDiagonal ? 0.15 : 0.10));
+			pShape->oTextBoxBodyPr->bIns = (int)(nH * (bDiagonal ? 0.22 : 0.27));
+			pShape->oTextBoxBodyPr->lIns = (int)(nW * (bDiagonal ? 0.0 : 0.032));
+			pShape->oTextBoxBodyPr->rIns = (int)(nW * (bDiagonal ? 0.04 : 0.009));
+		}
+
 		if (!bIsTop)
 		{
 			pCNvPr->id = m_lNextId;
@@ -3681,6 +3701,29 @@ std::wstring CDrawingConverter::GetDrawingMainProps(XmlUtils::CXmlNode& oNode, P
 			bExtendedSize = true;
 		}
 	}
+	// Word keeps the wrap area of a stroked shape outside the geometry: half of the line width on every side
+	// (what it writes itself as wp:effectExtent when it saves the shape as DrawingML).
+	LONG lStrokeExtent = 0;
+	{
+		nullable<SimpleTypes::CEmu> oStrokeWeightEE;
+		XmlMacroReadAttributeBase(oNode, L"strokeweight", oStrokeWeightEE);
+		nullable_string sStrokedEE;
+		XmlMacroReadAttributeBase(oNode, L"stroked", sStrokedEE);
+		XmlUtils::CXmlNode oNodeStrokeEE = oNode.ReadNode(L"v:stroke");
+		if (oNodeStrokeEE.IsValid())
+		{
+			nullable<SimpleTypes::CEmu> oWeightEE;
+			XmlMacroReadAttributeBase(oNodeStrokeEE, L"weight", oWeightEE);
+			if (oWeightEE.is_init()) oStrokeWeightEE = oWeightEE;
+			nullable_string sOnEE;
+			XmlMacroReadAttributeBase(oNodeStrokeEE, L"on", sOnEE);
+			if (sOnEE.is_init()) sStrokedEE = sOnEE;
+		}
+		bool bNoStroke = sStrokedEE.is_init() && (*sStrokedEE == L"false" || *sStrokedEE == L"f");
+		if (!bNoStroke && oStrokeWeightEE.is_init())
+			lStrokeExtent = (LONG)(oStrokeWeightEE->ToEmu() / 2);
+		if (lStrokeExtent < 0) lStrokeExtent = 0;
+	}
 	std::wstring originalId = oNode.ReadAttribute(L"id");
 
 	if (bIsInline)
@@ -3705,10 +3748,10 @@ std::wstring CDrawingConverter::GetDrawingMainProps(XmlUtils::CXmlNode& oNode, P
 
         oWriter.StartNode(L"wp:effectExtent");
 		oWriter.StartAttributes();
-		oWriter.WriteAttribute(L"l", bExtendedSize ? 10795 : 0);
-        oWriter.WriteAttribute(L"t", bExtendedSize ? 5080 : 0);
-        oWriter.WriteAttribute(L"r", bExtendedSize ? 28575 : 0);
-        oWriter.WriteAttribute(L"b", bExtendedSize ? 26670 : 0);
+		oWriter.WriteAttribute(L"l", bExtendedSize ? 10795 : lStrokeExtent);
+        oWriter.WriteAttribute(L"t", bExtendedSize ? 5080 : lStrokeExtent);
+        oWriter.WriteAttribute(L"r", bExtendedSize ? 28575 : lStrokeExtent);
+        oWriter.WriteAttribute(L"b", bExtendedSize ? 26670 : lStrokeExtent);
 		oWriter.EndAttributes();
         oWriter.EndNode(L"wp:effectExtent");
 
@@ -4004,10 +4047,10 @@ std::wstring CDrawingConverter::GetDrawingMainProps(XmlUtils::CXmlNode& oNode, P
     
 	oWriter.StartNode(L"wp:effectExtent");
 	oWriter.StartAttributes();
-	oWriter.WriteAttribute(L"l", bExtendedSize ? 10795 : 0);
-    oWriter.WriteAttribute(L"t", bExtendedSize ? 5080 : 0);
-    oWriter.WriteAttribute(L"r", bExtendedSize ? 28575 : 0);
-    oWriter.WriteAttribute(L"b", bExtendedSize ? 26670 : 0);
+	oWriter.WriteAttribute(L"l", bExtendedSize ? 10795 : lStrokeExtent);
+    oWriter.WriteAttribute(L"t", bExtendedSize ? 5080 : lStrokeExtent);
+    oWriter.WriteAttribute(L"r", bExtendedSize ? 28575 : lStrokeExtent);
+    oWriter.WriteAttribute(L"b", bExtendedSize ? 26670 : lStrokeExtent);
 	oWriter.EndAttributes();
     oWriter.EndNode(L"wp:effectExtent");
 

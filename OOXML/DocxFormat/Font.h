@@ -76,6 +76,7 @@ namespace OOX
 		enum EEmbedSlot { embedRegular = 0, embedBold = 1, embedItalic = 2, embedBoldItalic = 3, embedCount = 4 };
 		std::wstring										m_arEmbedRId[embedCount];	// r:id, relationship of word/fontTable.xml
 		std::wstring										m_arEmbedKey[embedCount];	// w:fontKey, GUID used to obfuscate the file
+		bool												m_arEmbedSubsetted[embedCount];	// w:subsetted
 		std::wstring										m_arEmbedPath[embedCount];	// full path of the .odttf file, set by CFontTable
 	};
 

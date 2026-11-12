@@ -232,6 +232,25 @@ public:
 	int ReadCustom(BYTE type, long length, void* poResult);
 	int ReadCustomContent(BYTE type, long length, void* poResult);
 };
+// Font table of the editor binary: only the fonts embedded in the source document are read (their plain font files
+// are in the media folder); each usable face is written back as an obfuscated word/fonts/fontN.odttf.
+class Binary_FontTableReader : public Binary_CommonReader
+{
+	Writers::FileWriter& m_oFileWriter;
+public:
+	struct SFont
+	{
+		std::wstring	sName;
+		std::wstring	aPath[4];
+		std::wstring	aKey[4];
+		BYTE			nSubsetted;
+		SFont() : nSubsetted(0) {}
+	};
+	Binary_FontTableReader(NSBinPptxRW::CBinaryFileReader& poBufferedStream, Writers::FileWriter& oFileWriter);
+	int Read();
+	int ReadFont(BYTE type, long length, void* poResult);
+	int ReadFontContent(BYTE type, long length, void* poResult);
+};
 class Binary_CommentsTableReader : public Binary_CommonReader
 {
 public:
@@ -324,6 +343,7 @@ public:
 	int ReadMoveFromRangeEnd(BYTE type, long length, void* poResult);
 	int ReadMoveToRangeEnd(BYTE type, long length, void* poResult);
 	int ReadFldChar(BYTE type, long length, void* poResult);
+	int ReadPTab(BYTE type, long length, void* poResult);
 	int ReadFldSimple(BYTE type, long length, void* poResult);
 	int ReadFFData(BYTE type, long length, void* poResult);
 	int ReadFFCheckBox(BYTE type, long length, void* poResult);

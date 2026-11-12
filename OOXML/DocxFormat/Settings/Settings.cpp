@@ -862,6 +862,7 @@ namespace Settings
     std::wstring CDocProtect::toXML() const
 	{
         std::wstring sResult = L"<w:documentProtection ";
+		const size_t nHeaderLen = sResult.length();
 
 		ComplexTypes_WriteAttribute ( L"w:edit=\"", m_oEdit );
 		sResult += m_oFormatting.ToAttribute( L"w:formatting");
@@ -890,6 +891,9 @@ namespace Settings
 			sResult += m_sSaltValue.ToAttribute(L"w:saltValue");
 			sResult += m_oSpinCount.ToAttribute(L"w:spinCount");
 		}
+		// An element without any attribute carries no protection: do not write it (the document had none)
+		if (sResult.length() == nHeaderLen)
+			return L"";
 		sResult += L"/>";
 
 		return sResult;

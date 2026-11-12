@@ -481,6 +481,18 @@ namespace PPTX
 				m_bChartEx = true;
 			}
 		}
+		void ChartRec::CheckChartExFile(NSBinPptxRW::CBinaryFileWriter* pWriter)
+		{
+			if (m_bChartEx || !id_data.IsInit()) return;
+
+			OOX::IFileContainer* pRels = pWriter ? pWriter->GetRelsPtr() : NULL;
+			smart_ptr<OOX::File> file;
+			if (parentFileIs<OOX::IFileContainer>())	file = parentFileAs<OOX::IFileContainer>().Find(*id_data);
+			else if (pRels != NULL)						file = pRels->Find(*id_data);
+
+			if (file.smart_dynamic_cast<OOX::Spreadsheet::CChartExFile>().IsInit())
+				m_bChartEx = true;
+		}
 		void ChartRec::toPPTY(NSBinPptxRW::CBinaryFileWriter* pWriter) const
 		{
 			OOX::IFileContainer* pRels = pWriter->GetRelsPtr();

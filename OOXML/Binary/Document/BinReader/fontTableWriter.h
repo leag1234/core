@@ -27,6 +27,9 @@
 #include "../../Sheets/Common/Common.h"
 #include "../../../../DesktopEditor/graphics/pro/Fonts.h"
 #include <boost/unordered_map.hpp>
+#include <vector>
+#include <set>
+#include "../../../DocxFormat/FontObfuscation.h"
 
 namespace Writers
 {
@@ -42,6 +45,29 @@ namespace Writers
 
 	public:
         boost::unordered_map<std::wstring, char> m_mapFonts;
+
+		// Fonts embedded in the source document (word/fonts/*.odttf), kept when the document is saved.
+		struct CEmbeddedFont
+		{
+			std::wstring	m_sName;
+			bool			m_aHas[4];			// slots: regular, bold, italic, bold italic
+			std::wstring	m_aRId[4];
+			std::wstring	m_aKey[4];
+			bool			m_aSubsetted[4];
+			CEmbeddedFont() { for (int i = 0; i < 4; ++i) m_aHas[i] = false, m_aSubsetted[i] = false; }
+		};
+		std::vector<CEmbeddedFont>	m_arEmbedded;
+
+		// Re-creates the obfuscated font from the plain font file of the media folder, writes it as
+		// word/fonts/fontN.odttf and remembers it for fontTable.xml. False (nothing written) when the face is not usable.
+		bool AddEmbeddedFace(const std::wstring& sFontName, int nSlot, const std::wstring& sKey, bool bSubsetted, const std::wstring& sPlainPath);
+		bool HasEmbedded() const { return !m_arEmbedded.empty(); }
+		bool HasSubsettedEmbedded() const;
+	private:
+		size_t	m_nEmbeddedTotal = 0;
+		int		m_nEmbeddedCount = 0;
+		void WriteEmbedElements(const CEmbeddedFont& oFont);
+	public:
 
 		FontTableWriter(std::wstring sDir, std::wstring sFontDir, bool bNoFontDir);
 		~FontTableWriter();

@@ -30,6 +30,8 @@ namespace OOX
 	CFont::CFont()
 	{
 		m_sName = _T("Arial");
+		for (int i = 0; i < embedCount; ++i)
+			m_arEmbedSubsetted[i] = false;
 	}
 	CFont::~CFont() {}
 	void CFont::fromXML(XmlUtils::CXmlNode& oNode)
@@ -216,14 +218,16 @@ namespace OOX
 	}
 	void CFont::ReadEmbed(XmlUtils::CXmlLiteReader& oReader, int nSlot)
 	{
-		std::wstring sRId, sKey;
+		std::wstring sRId, sKey, sSubsetted;
 		WritingElement_ReadAttributes_Start( oReader )
 			WritingElement_ReadAttributes_Read_if     ( oReader, L"r:id",		sRId )
 			WritingElement_ReadAttributes_Read_else_if( oReader, L"w:fontKey",	sKey )
+			WritingElement_ReadAttributes_Read_else_if( oReader, L"w:subsetted",	sSubsetted )
 		WritingElement_ReadAttributes_End( oReader )
 
 		m_arEmbedRId[nSlot] = sRId;
 		m_arEmbedKey[nSlot] = sKey;
+		m_arEmbedSubsetted[nSlot] = (L"1" == sSubsetted || L"true" == sSubsetted || L"on" == sSubsetted);
 	}
 	void CFont::Reset()
 		{
@@ -232,6 +236,7 @@ namespace OOX
 				m_arEmbedRId[i].clear();
 				m_arEmbedKey[i].clear();
 				m_arEmbedPath[i].clear();
+				m_arEmbedSubsetted[i] = false;
 			}
 			m_sName = L"Arial";
 			m_oCharset.reset();

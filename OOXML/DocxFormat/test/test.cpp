@@ -8,6 +8,9 @@
 #include "../Numbering.h"
 #include "../Font.h"
 #include "../FontObfuscation.h"
+#include "../Logic/RunContent.h"
+#include "../Logic/ParagraphProperty.h"
+#include "../Settings/Settings.h"
 #include <vector>
 // Needed for compile-time completeness of OOX::Logic::CParagraphProperty's own
 // members (CLvl's implicit copy constructor, triggered by any return-by-value
@@ -465,6 +468,9 @@ TEST(DocxEmbeddedFonts, FontFromXml_ReadsTheEmbeddedFaces)
 	EXPECT_EQ(oFont.m_arEmbedRId[OOX::CFont::embedBold], L"rId2");
 	EXPECT_TRUE(oFont.m_arEmbedRId[OOX::CFont::embedItalic].empty());
 	EXPECT_EQ(oFont.m_arEmbedRId[OOX::CFont::embedBoldItalic], L"rId4");
+	EXPECT_FALSE(oFont.m_arEmbedSubsetted[OOX::CFont::embedRegular]);
+	EXPECT_TRUE(oFont.m_arEmbedSubsetted[OOX::CFont::embedBold]);
+	EXPECT_FALSE(oFont.m_arEmbedSubsetted[OOX::CFont::embedBoldItalic]);
 
 	// the next read starts from a clean state
 	std::wstring sXml2 = L"<w:font w:name=\"Arial\"/>";
@@ -475,4 +481,105 @@ TEST(DocxEmbeddedFonts, FontFromXml_ReadsTheEmbeddedFaces)
 	EXPECT_EQ(oFont.m_sName, L"Arial");
 	EXPECT_TRUE(oFont.m_arEmbedRId[OOX::CFont::embedRegular].empty());
 	EXPECT_TRUE(oFont.m_arEmbedKey[OOX::CFont::embedBold].empty());
+	EXPECT_FALSE(oFont.m_arEmbedSubsetted[OOX::CFont::embedBold]);
+}
+
+// Saving: the plain font taken from the media folder is obfuscated again with the same key and gives back the
+// bytes of the original .odttf exactly (the operation is its own inverse), and the original key is still valid.
+TEST(DocxEmbeddedFonts, Save_ReobfuscationRestoresTheOriginalFileExactly)
+{
+	const std::wstring sGuid = L"{3EEE3167-E5B8-4798-AE48-EA6B71E31D4D}";
+	unsigned char aKey[16];
+	ASSERT_TRUE(OOX::FontObfuscation::GuidToKey(sGuid, aKey));
+
+	std::vector<unsigned char> aPlain(300);
+	for (size_t i = 0; i < aPlain.size(); ++i)
+		aPlain[i] = (unsigned char)(i * 7 + 3);
+	aPlain[0] = 0; aPlain[1] = 1; aPlain[2] = 0; aPlain[3] = 0;	// TrueType signature
+
+	// the file of the document as Word wrote it
+	std::vector<unsigned char> aOriginal = aPlain;
+	ASSERT_TRUE(OOX::FontObfuscation::Xor(&aOriginal[0], aOriginal.size(), aKey));
+	EXPECT_NE(aOriginal, aPlain);
+
+	// open: de-obfuscate (the plain font goes to the media folder); save: obfuscate again with the stored key
+	std::vector<unsigned char> aMedia = aOriginal;
+	ASSERT_TRUE(OOX::FontObfuscation::Deobfuscate(&aMedia[0], aMedia.size(), sGuid));
+	EXPECT_EQ(aMedia, aPlain);
+	ASSERT_TRUE(OOX::FontObfuscation::Xor(&aMedia[0], aMedia.size(), aKey));
+	EXPECT_EQ(aMedia, aOriginal);
+}
+
+// Absolute position tab (w:ptab): the three attributes are read and written back as they were.
+static std::wstring ReadAndWritePTab(const std::wstring& sXml, OOX::Logic::CPTab& oPTab)
+{
+	XmlUtils::CXmlLiteReader oReader;
+	EXPECT_TRUE(oReader.FromString(sXml));
+	EXPECT_TRUE(oReader.ReadNextNode());
+	oPTab.fromXML(oReader);
+	return oPTab.toXML();
+}
+
+TEST(DocxPTab, FromXmlToXml_KeepsAlignmentRelativeToAndLeader)
+{
+	OOX::Logic::CPTab oPTab;
+	const std::wstring sOut = ReadAndWritePTab(
+		L"<w:ptab xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" "
+		L"w:relativeTo=\"margin\" w:alignment=\"right\" w:leader=\"none\"/>", oPTab);
+
+	ASSERT_TRUE(oPTab.m_oAlignment.IsInit());
+	ASSERT_TRUE(oPTab.m_oRelativeTo.IsInit());
+	ASSERT_TRUE(oPTab.m_oLeader.IsInit());
+	EXPECT_EQ(oPTab.m_oAlignment->ToString(), L"right");
+	EXPECT_EQ(oPTab.m_oRelativeTo->ToString(), L"margin");
+	EXPECT_EQ(oPTab.m_oLeader->ToString(), L"none");
+	EXPECT_NE(sOut.find(L"w:alignment=\"right\""), std::wstring::npos);
+	EXPECT_NE(sOut.find(L"w:relativeTo=\"margin\""), std::wstring::npos);
+	EXPECT_NE(sOut.find(L"w:leader=\"none\""), std::wstring::npos);
+	EXPECT_EQ(oPTab.getType(), OOX::et_w_ptab);
+}
+
+TEST(DocxPTab, FromXml_CenterIndentDot)
+{
+	OOX::Logic::CPTab oPTab;
+	ReadAndWritePTab(
+		L"<w:ptab xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" "
+		L"w:relativeTo=\"indent\" w:alignment=\"center\" w:leader=\"dot\"/>", oPTab);
+	EXPECT_EQ(oPTab.m_oAlignment->ToString(), L"center");
+	EXPECT_EQ(oPTab.m_oRelativeTo->ToString(), L"indent");
+	EXPECT_EQ(oPTab.m_oLeader->ToString(), L"dot");
+}
+
+// An empty w:documentProtection (no attribute) is not written: the document had no protection.
+TEST(DocxSettings, DocProtectToXml_EmptyElementIsNotWritten)
+{
+	OOX::Settings::CDocProtect oEmpty;
+	EXPECT_TRUE(oEmpty.toXML().empty());
+}
+
+// w:autoSpaceDE / w:autoSpaceDN: read from pPr and written back before w:bidi (schema order of CT_PPrBase).
+static std::wstring ReadAndWritePPr(const std::wstring& sXml, OOX::Logic::CParagraphProperty& oPPr)
+{
+	XmlUtils::CXmlLiteReader oReader;
+	EXPECT_TRUE(oReader.FromString(sXml));
+	EXPECT_TRUE(oReader.ReadNextNode());
+	oPPr.fromXML(oReader);
+	return oPPr.toXML();
+}
+
+TEST(DocxAutoSpace, FromXmlToXml_KeepsAutoSpaceDEAndDNBeforeBidi)
+{
+	OOX::Logic::CParagraphProperty oPPr;
+	const std::wstring sOut = ReadAndWritePPr(
+		L"<w:pPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">"
+		L"<w:autoSpaceDE w:val=\"0\"/><w:autoSpaceDN w:val=\"0\"/><w:bidi w:val=\"1\"/></w:pPr>", oPPr);
+
+	ASSERT_TRUE(oPPr.m_oAutoSpaceDE.IsInit());
+	ASSERT_TRUE(oPPr.m_oAutoSpaceDN.IsInit());
+	EXPECT_FALSE(oPPr.m_oAutoSpaceDE->m_oVal.ToBool());
+	EXPECT_FALSE(oPPr.m_oAutoSpaceDN->m_oVal.ToBool());
+	EXPECT_NE(sOut.find(L"<w:autoSpaceDE w:val=\"0\"/>"), std::wstring::npos);
+	EXPECT_NE(sOut.find(L"<w:autoSpaceDN w:val=\"0\"/>"), std::wstring::npos);
+	EXPECT_LT(sOut.find(L"<w:autoSpaceDE"), sOut.find(L"<w:bidi"));
+	EXPECT_LT(sOut.find(L"<w:autoSpaceDN"), sOut.find(L"<w:bidi"));
 }

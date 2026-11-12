@@ -1168,6 +1168,18 @@ void Binary_pPrWriter::Write_pPr(const OOX::Logic::CParagraphProperty& pPr)
 		m_oBcw.m_oStream.WriteBYTE(c_oSerProp_pPrType::Bidi);
 		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
 		m_oBcw.m_oStream.WriteBOOL(pPr.m_oBidi->m_oVal.ToBool());
+	}
+	if (pPr.m_oAutoSpaceDE.IsInit())
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerProp_pPrType::AutoSpaceDE);
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
+		m_oBcw.m_oStream.WriteBOOL(pPr.m_oAutoSpaceDE->m_oVal.ToBool());
+	}
+	if (pPr.m_oAutoSpaceDN.IsInit())
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerProp_pPrType::AutoSpaceDN);
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
+		m_oBcw.m_oStream.WriteBOOL(pPr.m_oAutoSpaceDN->m_oVal.ToBool());
 	}}
 void Binary_pPrWriter::WritePPrChange(const OOX::Logic::CPPrChange& pPrChange)
 {
@@ -5282,7 +5294,9 @@ void BinaryDocumentTableWriter::WriteMathRunContent(OOX::Logic::CMRun* pMRun)
 			case OOX::et_w_pict:
 			case OOX::et_w_drawing:
 			{
-				WriteDrawingPptx(item);				
+				WriteDrawingPptx(item);
+				// a chartEx without mc:Fallback must not turn the next drawing into an alternative
+				m_oParamsWriter.bWriteAlternative = false;
 			}break;
 			case OOX::et_w_fldChar:
 			{
@@ -5313,7 +5327,9 @@ void BinaryDocumentTableWriter::WriteMathRunContent(OOX::Logic::CMRun* pMRun)
 				m_oBcw.m_oStream.WriteLONG(c_oSerPropLenType::Null);
 			}break;
 			case OOX::et_w_ptab:
-				break;
+			{
+				WritePTab(static_cast<OOX::Logic::CPTab*>(item));
+			}break;
 			case OOX::et_w_softHyphen:
 			{
 				m_oBcw.m_oStream.WriteBYTE(c_oSerRunType::softHyphen);
@@ -6736,6 +6752,8 @@ void BinaryDocumentTableWriter::WriteRunContent(std::vector<OOX::WritingElement*
 		case OOX::et_w_drawing:
 			{
 				WriteDrawingPptx(item);
+				// a chartEx without mc:Fallback must not turn the next drawing into an alternative
+				m_oParamsWriter.bWriteAlternative = false;
 				break;
 			}
 		case OOX::et_w_fldChar:
@@ -6772,6 +6790,9 @@ void BinaryDocumentTableWriter::WriteRunContent(std::vector<OOX::WritingElement*
 			}
 			break;
 		case OOX::et_w_ptab:
+			{
+				WritePTab(static_cast<OOX::Logic::CPTab*>(item));
+			}
 			break;
 		case OOX::et_w_rPr:
 			break;
@@ -6888,6 +6909,27 @@ void BinaryDocumentTableWriter::WriteNoteRef(const nullable<SimpleTypes::COnOff>
 		m_oBcw.m_oStream.WriteLONG(oId->GetValue());
 		m_oBcw.WriteItemEnd(nCurPos);
 	}
+}
+void BinaryDocumentTableWriter::WritePTab(OOX::Logic::CPTab* pPTab)
+{
+	// absolute position tab: attribute values are stored as the OOXML strings, absent attributes are not written
+	int nCurPos = m_oBcw.WriteItemStart(c_oSerRunType::ptab);
+	if (pPTab->m_oAlignment.IsInit())
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPTabType::Alignment);
+		m_oBcw.m_oStream.WriteStringW(pPTab->m_oAlignment->ToString());
+	}
+	if (pPTab->m_oRelativeTo.IsInit())
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPTabType::RelativeTo);
+		m_oBcw.m_oStream.WriteStringW(pPTab->m_oRelativeTo->ToString());
+	}
+	if (pPTab->m_oLeader.IsInit())
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPTabType::Leader);
+		m_oBcw.m_oStream.WriteStringW(pPTab->m_oLeader->ToString());
+	}
+	m_oBcw.WriteItemWithLengthEnd(nCurPos);
 }
 void BinaryDocumentTableWriter::WriteText(const std::wstring& text, BYTE type)
 {
@@ -7045,6 +7087,7 @@ void BinaryDocumentTableWriter::WriteDrawing(std::wstring* pXml, OOX::Logic::CDr
 		}
 		if (pGraphic->chartRec.IsInit() && pGraphic->chartRec->id_data.IsInit() )
 		{
+			pGraphic->chartRec->CheckChartExFile(&m_oBcw.m_oStream);
 			m_oBcw.m_oStream.WriteBYTE(pGraphic->chartRec->m_bChartEx ? c_oSerImageType2::ChartEx : c_oSerImageType2::Chart);
 			m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Variable);
 
@@ -10306,6 +10349,7 @@ void BinaryFileWriter::intoBindoc(const std::wstring& sSrcPath)
 				m_oBcw.m_oStream.WriteStringW3(pFont->m_oFamily->ToString());
 				m_oBcw.WriteItemEnd(nItem);
 			}
+			BYTE nSubsetted = 0;
 			for (int nSlot = 0; nSlot < OOX::CFont::embedCount; ++nSlot)
 			{
 				// embedded faces: only written when the font was extracted (no item otherwise)
@@ -10314,6 +10358,18 @@ void BinaryFileWriter::intoBindoc(const std::wstring& sSrcPath)
 					continue;
 				nItem = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::EmbedRegular + nSlot);
 				m_oBcw.m_oStream.WriteStringW3(sMedia);
+				m_oBcw.WriteItemEnd(nItem);
+				// the key and the subsetted flag travel with the face: saving re-creates the original .odttf
+				nItem = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::EmbedKeyRegular + nSlot);
+				m_oBcw.m_oStream.WriteStringW3(pFont->m_arEmbedKey[nSlot]);
+				m_oBcw.WriteItemEnd(nItem);
+				if (pFont->m_arEmbedSubsetted[nSlot])
+					nSubsetted |= (BYTE)(1 << nSlot);
+			}
+			if (0 != nSubsetted)
+			{
+				nItem = m_oBcw.WriteItemStart(BinDocxRW::c_oSerFontTableTypes::EmbedSubsetted);
+				m_oBcw.m_oStream.WriteBYTE(nSubsetted);
 				m_oBcw.WriteItemEnd(nItem);
 			}
 			m_oBcw.WriteItemEnd(nFont);

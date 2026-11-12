@@ -102,6 +102,9 @@ namespace PPTX
 			virtual void toPPTY(NSBinPptxRW::CBinaryFileWriter* pWriter) const;
 			virtual void fromPPTY(NSBinPptxRW::CBinaryFileReader* pReader);
 
+			// Sets m_bChartEx when the referenced part is a chartEx part.
+			void CheckChartExFile(NSBinPptxRW::CBinaryFileWriter* pWriter);
+
 			nullable<OOX::RId>	id_data;
 
 			bool				m_bChartEx = false;

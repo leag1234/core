@@ -117,7 +117,12 @@ extern int g_nCurFormatVersion;
 		EmbedRegular	= 4,	// embedded font faces: Variable string, media path of the plain font file
 		EmbedBold		= 5,	// (e.g. "fonts/Name_regular.ttf"), the file is written to the media folder
 		EmbedItalic		= 6,
-		EmbedBoldItalic	= 7
+		EmbedBoldItalic	= 7,
+		EmbedKeyRegular	= 8,	// w:fontKey (GUID string) of each embedded face, so that the original .odttf can be
+		EmbedKeyBold	= 9,	// re-created on save (same slot order as EmbedRegular..EmbedBoldItalic)
+		EmbedKeyItalic	= 10,
+		EmbedKeyBoldItalic = 11,
+		EmbedSubsetted	= 12	// one byte: bit mask of the slots whose font is subsetted (w:subsetted)
 	};}
 	namespace c_oSerSigTypes{enum c_oSerSigTypes
 	{
@@ -372,7 +377,9 @@ extern int g_nCurFormatVersion;
 		SnapToGrid = 46,
 		Bidi = 47,
 		Spacing_AfterLines = 48,
-		Spacing_BeforeLines = 49
+		Spacing_BeforeLines = 49,
+		AutoSpaceDE = 50,
+		AutoSpaceDN = 51
 	};}
 	namespace c_oSerProp_rPrType{enum c_oSerProp_rPrType
 	{
@@ -631,7 +638,15 @@ extern int g_nCurFormatVersion;
 		linebreakClearAll = 32,
 		linebreakClearLeft = 33,
 		linebreakClearRight = 34,
+		ptab = 35,
 		pptxDrawingAlternative = 0x99
+	};}
+	// children of c_oSerRunType::ptab (absolute position tab); each holds the OOXML attribute value as a string
+	namespace c_oSerPTabType{enum c_oSerPTabType
+	{
+		Alignment = 0,
+		RelativeTo = 1,
+		Leader = 2
 	};}
 	namespace c_oSerVbaProjectTypes{enum c_oSerVbaProjectType
 	{
