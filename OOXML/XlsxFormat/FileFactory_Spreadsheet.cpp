@@ -23,6 +23,7 @@
  *
  */
 #include "CommonInclude.h"
+#include "../Common/ChartExDetect.h"
 
 #include "FileTypes_Spreadsheet.h"
 #include "Xlsx.h"
@@ -139,6 +140,8 @@ namespace OOX
 			else if (oRelation.Type() == FileTypes::XmlMaps)
 				return smart_ptr<OOX::File>(new CXmlMapsFile(pMain, oRootPath, oFileName));
 
+			else if ( oRelation.Type() == OOX::FileTypes::Chart && IsChartExPart(oFileName) )
+				return smart_ptr<OOX::File>(new CChartExFile( pMain, oRootPath, oFileName ));
 			else if ( oRelation.Type() == OOX::FileTypes::Chart )
 				return smart_ptr<OOX::File>(new CChartFile( pMain, oRootPath, oFileName ));
 			else if ( oRelation.Type() == OOX::FileTypes::ChartEx )
@@ -275,6 +278,8 @@ namespace OOX
 				return smart_ptr<OOX::File>(new CThreadedComments( pMain, oRootPath, oFileName ));			
 			else if ( pRelation->Type() == FileTypes::Persons)
 				return smart_ptr<OOX::File>(new CPersonList( pMain, oRootPath, oFileName));			
+			else if ( pRelation->Type() == OOX::FileTypes::Chart && IsChartExPart(oFileName) )
+				return smart_ptr<OOX::File>(new CChartExFile( pMain, oRootPath, oFileName ));
 			else if ( pRelation->Type() == OOX::FileTypes::Chart )
 				return smart_ptr<OOX::File>(new CChartFile( pMain, oRootPath, oFileName ));
 			else if ( pRelation->Type() == OOX::FileTypes::ChartEx )

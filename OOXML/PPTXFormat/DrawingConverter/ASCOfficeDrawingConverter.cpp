@@ -1813,6 +1813,50 @@ void CDrawingConverter::ConvertDrawing(PPTX::Logic::SpTreeElem *elem, XmlUtils::
 		}
 	}
 }
+
+// Gaps (fraction of the shape height) that Word leaves above and below the capital letters of a VML text path, measured
+// with Word 16 desktop on upper-case strings in a shape turned by 315 degrees. Unknown fonts use the Calibri row.
+static void WordArtFitGaps(const std::wstring& sFontFamily, double& dTop, double& dBottom)
+{
+	struct SGap { const wchar_t* sFont; double dTop; double dBottom; };
+	static const SGap arGaps[] = {
+		{L"calibri",         0.1100, 0.2396},
+		{L"arial",           0.1067, 0.1526},
+		{L"arial black",     0.0221, 0.2376},
+		{L"times new roman", 0.1172, 0.1904}
+	};
+	std::wstring sLower = sFontFamily;
+	for (size_t i = 0; i < sLower.length(); ++i)
+		if (sLower[i] >= L'A' && sLower[i] <= L'Z') sLower[i] += (L'a' - L'A');
+	dTop = arGaps[0].dTop;
+	dBottom = arGaps[0].dBottom;
+	for (size_t i = 0; i < sizeof(arGaps) / sizeof(arGaps[0]); ++i)
+	{
+		if (sLower == arGaps[i].sFont)
+		{
+			dTop = arGaps[i].dTop;
+			dBottom = arGaps[i].dBottom;
+			break;
+		}
+	}
+}
+static std::wstring sTextPathFontFamily(CPPTShape* pPPTShape)
+{
+	std::wstring sFont;
+	if (pPPTShape && pPPTShape->m_textPath.sStyle)
+	{
+		SimpleTypes::Vml::CCssStyle oCssStyle;
+		oCssStyle.FromString(*pPPTShape->m_textPath.sStyle);
+		std::map<SimpleTypes::Vml::ECssPropertyType, size_t>::iterator pFind = oCssStyle.m_mapProperties.find(SimpleTypes::Vml::cssptFontFamily);
+		if (pFind != oCssStyle.m_mapProperties.end())
+		{
+			sFont = oCssStyle.m_arrProperties[pFind->second]->get_Value().wsValue;
+			XmlUtils::replace_all(sFont, L"\"", L"");
+		}
+	}
+	return sFont;
+}
+
 void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CXmlNode& oNodeShape, std::wstring* pMainProps, bool bIsTop)
 {
 	if (!elem) return;
@@ -2506,20 +2550,30 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			pShape->oTextBoxBodyPr->fromWordArt.get_value_or(false) && pSpPr->xfrm.IsInit() &&
 			pSpPr->xfrm->extX.IsInit() && pSpPr->xfrm->extY.IsInit())
 		{
-			// VML text path (not trimmed) scales the em box of the font to the shape height, so the glyph ink covers only the
-			// middle of the shape. DrawingML warped text (textPlain) fits the ink of the text to the text rectangle instead and
-			// Word then draws it larger and shifted. Shrink the text rectangle by the usual space above the capital letters and
-			// below the baseline (proportions measured against Word's rendering of a Calibri watermark).
+			// DrawingML warped text (textPlain) fits the ink of the text to the text rectangle. Word draws a VML text path
+			// (fitshape, usually font-size 1pt) with the em of the font equal to the shape height and the text stretched
+			// to the shape width, so the capitals keep a gap above and below that depends on the font. The text rectangle
+			// of the DrawingML shape is the box shrunk by those gaps (measured against Word desktop, see WordArtFitGaps).
 			int nW = *pSpPr->xfrm->extX;
 			int nH = *pSpPr->xfrm->extY;
-			// Word places the VML ink differently once the shape is turned by a diagonal angle (the usual watermark
-			// rotation, 45 or 315 degrees); the second set is the measured fit for those two angles only.
+			// Measured with Word: unless the shape is turned by a diagonal angle (the usual watermark rotation, 45 or
+			// 315 degrees), Word places the ink about 1.8pt further right and 1.8pt further up.
 			int nRot = pSpPr->xfrm->rot.get_value_or(0);
 			bool bDiagonal = (nRot == 45 * 60000 || nRot == 315 * 60000);
-			pShape->oTextBoxBodyPr->tIns = (int)(nH * (bDiagonal ? 0.15 : 0.10));
-			pShape->oTextBoxBodyPr->bIns = (int)(nH * (bDiagonal ? 0.22 : 0.27));
-			pShape->oTextBoxBodyPr->lIns = (int)(nW * (bDiagonal ? 0.0 : 0.032));
-			pShape->oTextBoxBodyPr->rIns = (int)(nW * (bDiagonal ? 0.04 : 0.009));
+			double dFontTop = 0, dFontBottom = 0;
+			WordArtFitGaps(sTextPathFontFamily(pPPTShape), dFontTop, dFontBottom);
+			const double dShift = 1.83 * 12700; // EMU
+			double dTop = nH * dFontTop, dBottom = nH * dFontBottom;
+			double dLeft = nW * 0.005, dRight = nW * 0.005;
+			if (!bDiagonal)
+			{
+				dTop -= dShift; dBottom += dShift;
+				dLeft += dShift; dRight = std::max(0.0, dRight - dShift);
+			}
+			pShape->oTextBoxBodyPr->tIns = (int)std::max(0.0, dTop);
+			pShape->oTextBoxBodyPr->bIns = (int)dBottom;
+			pShape->oTextBoxBodyPr->lIns = (int)dLeft;
+			pShape->oTextBoxBodyPr->rIns = (int)dRight;
 		}
 
 		if (!bIsTop)

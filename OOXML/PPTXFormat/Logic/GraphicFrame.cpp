@@ -584,6 +584,7 @@ namespace PPTX
 			}
 			else if (chartRec.is_init())
 			{
+				chartRec->CheckChartExFile(pWriter);
 				if (chartRec->m_bChartEx)
 				{
 					pWriter->WriteRecord2(7, chartRec);
