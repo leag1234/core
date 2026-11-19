@@ -37,6 +37,8 @@ namespace cpdoccore {
 namespace odf_reader {
 namespace text {
 
+class section;
+
 class paragraph
 {
 public:
@@ -51,14 +53,17 @@ public:
 
  	//_CP_OPT(std::wstring)	next_element_style_name; //for master page
    
-	void set_next_section(bool Val) 
+	// sec: the text:section that starts after this paragraph / that ends with it (when known)
+	void set_next_section(bool Val, const section * sec = NULL) 
     {
         next_section_ = Val;
+		next_section_ptr_ = sec;
     }
 
-    void set_next_end_section(bool Val) 
+    void set_next_end_section(bool Val, const section * sec = NULL) 
     {
         next_end_section_ = Val;
+		end_section_ptr_ = sec;
     }
   
 	void docx_convert (oox::docx_conversion_context & Context, _CP_OPT(std::wstring) next_element_style_name) ;
@@ -82,6 +87,8 @@ private:
  
 	bool					next_section_;
     bool					next_end_section_;	
+	const section *			next_section_ptr_ = NULL;
+	const section *			end_section_ptr_ = NULL;
 
     friend class p;   
 	friend class h;   
@@ -219,6 +226,13 @@ public:
 	virtual void afterCreate();
     virtual void afterReadContent();
 
+	// the section is the last element of the document body: its properties go to the section properties of the body
+	void set_last_in_body(bool val) { last_in_body_ = val; }
+
+	// a section break is only worth writing for a section with columns: a one column section carries nothing the
+	// editor needs, and the break would only add a page style when the file is saved again
+	bool has_columns(oox::docx_conversion_context & Context) const;
+
 private:
     virtual void add_attributes( const xml::attributes_wc_ptr & Attributes );
     virtual void add_child_element( xml::sax * Reader, const std::wstring & Ns, const std::wstring & Name);
@@ -226,6 +240,7 @@ private:
     odf_types::section_attlists	section_attr_;
     office_element_ptr			section_source_;
     office_element_ptr_array	content_;          
+	bool						last_in_body_ = false;
 
 };
 

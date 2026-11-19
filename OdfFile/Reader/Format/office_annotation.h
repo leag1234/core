@@ -50,6 +50,9 @@ public:
 	_CP_OPT(std::wstring) draw_style_name_;
 };
 //-----------------------------------------------------------------------------------------------------------
+// forgets the annotation names collected while parsing (call once the document is converted)
+void clear_annotation_end_names();
+//-----------------------------------------------------------------------------------------------------------
 //  office:annotation-end 
 class office_annotation_end : public office_element_impl<office_annotation_end>
 {

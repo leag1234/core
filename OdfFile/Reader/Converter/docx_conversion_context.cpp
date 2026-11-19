@@ -225,6 +225,10 @@ void docx_conversion_context::add_element_to_run(std::wstring parenStyleId)
 {
 	if (false == current_process_comment_)
 	{
+		// commentRangeStart/End are paragraph level elements: they cannot sit inside a run that is still open
+		if (state_.in_run_ && (false == get_comments_context().ref_start_.empty() || false == get_comments_context().ref_end_.empty()))
+			finish_run();
+
 		for (size_t i = 0; i < get_comments_context().ref_start_.size(); i++)
 		{
 			output_stream() << L"<w:commentRangeStart w:id=\"" << get_comments_context().ref_start_[i] << L"\"/>";
@@ -240,7 +244,7 @@ void docx_conversion_context::add_element_to_run(std::wstring parenStyleId)
 			
 			for (size_t i = 0; i < get_comments_context().ref_end_.size(); i++)
 			{
-				output_stream()<< L"<w:commentReference w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";			
+				output_stream()<< L"<w:r><w:commentReference w:id=\"" << get_comments_context().ref_end_[i] << L"\"/></w:r>";			
 			}
 		
 			get_comments_context().ref_end_.clear();		
@@ -291,8 +295,14 @@ void docx_conversion_context::finish_paragraph()
 	{
 		end_changes(true);
 
-		if (false == current_process_comment_ && false == get_comments_context().ref_end_.empty())
+		if (false == current_process_comment_ && (false == get_comments_context().ref_end_.empty() || false == get_comments_context().ref_start_.empty()))
 		{
+				for (size_t i = 0; i < get_comments_context().ref_start_.size(); i++)
+				{
+					output_stream()<< L"<w:commentRangeStart w:id=\"" << get_comments_context().ref_start_[i] << L"\"/>";
+				}
+				get_comments_context().ref_start_.clear();
+
 				for (size_t i = 0; i < get_comments_context().ref_end_.size(); i++)
 				{
 					output_stream()<< L"<w:commentRangeEnd w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";
@@ -300,7 +310,7 @@ void docx_conversion_context::finish_paragraph()
 				
 				for (size_t i = 0; i < get_comments_context().ref_end_.size(); i++)
 				{
-					output_stream()<< L"<w:commentReference w:id=\"" << get_comments_context().ref_end_[i] << L"\"/>";			
+					output_stream()<< L"<w:r><w:commentReference w:id=\"" << get_comments_context().ref_end_[i] << L"\"/></w:r>";			
 				}
 			
 				get_comments_context().ref_end_.clear();	
@@ -1586,20 +1596,28 @@ void docx_conversion_context::process_section(std::wostream & strm, odf_reader::
 					page_width -= attr_page.common_horizontal_margin_attlist_.fo_margin_right_->get_length().get_value_unit(odf_types::length::pt);
 				}
 			}		
+			// style:rel-width is a proportion ("21845*"), not a percentage: relate it to the sum of the widths of all columns
+			double rel_sum = 0;
+			for (size_t i = 0; i < columns->style_columns_.size(); i++)
+			{
+				odf_reader::style_column *col = dynamic_cast<odf_reader::style_column*>( columns->style_columns_[i].get());
+				if (col && col->style_rel_width_) rel_sum += col->style_rel_width_->get_value();
+			}
 			for (size_t i = 0; page_width > 0, i < columns->style_columns_.size(); i++)
 			{
 				odf_reader::style_column *col = dynamic_cast<odf_reader::style_column*>( columns->style_columns_[i].get());
 				if (!col) continue;
 
 				double percent = col->style_rel_width_ ? col->style_rel_width_->get_value() : 0;
-				if (percent > 0x7FFE)
+				if (percent > 0x7FFE && rel_sum <= 0)
 				{
 					//auto
 					break;
 				}
 				else
 				{
-					if (percent > 1000.) percent /= 100.;
+					if (percent > 1000. && rel_sum > 0) percent = percent * 100. / rel_sum;
+					else if (percent > 1000.) percent /= 100.;
 
 					double width = page_width * percent / 100.;
 
@@ -1617,6 +1635,17 @@ void docx_conversion_context::process_section(std::wostream & strm, odf_reader::
 
 					width_space.push_back(std::make_pair(width, space_start + space_end));
 				}
+			}
+			// columns of the same width: let the editor space them equally (w:equalWidth)
+			if (width_space.size() > 1)
+			{
+				bool equal = true;
+				for (size_t i = 1; i < width_space.size(); i++)
+				{
+					if (fabs(width_space[i].first - width_space[0].first) > 0.01 * width_space[0].first)
+						equal = false;
+				}
+				if (equal) width_space.clear();
 			}
 		}
 	}
@@ -2199,7 +2228,7 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
 							if ((outline_level) && (*outline_level < 10))
 							{
 								output_stream() << L"<w:pPr>";
-									output_stream() << L"<w:outlineLvl w:val=\"" << *outline_level << L"\"/>";
+									output_stream() << L"<w:outlineLvl w:val=\"" << (*outline_level > 0 ? *outline_level - 1 : 0) << L"\"/>"; // OOXML levels are 0-based, ODF levels 1-based
 								output_stream() << L"</w:pPr>";
 							}					
 						}
@@ -2210,7 +2239,7 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
 							//if ((Attr->outline_level_) && (*Attr->outline_level_ > 0))
 							if ((outline_level) && (*outline_level < 10))
 							{
-								output_stream() << L"<w:outlineLvl w:val=\"" << *outline_level << L"\"/>";
+								output_stream() << L"<w:outlineLvl w:val=\"" << (*outline_level > 0 ? *outline_level - 1 : 0) << L"\"/>"; // OOXML levels are 0-based, ODF levels 1-based
 							}
 							output_stream() << L"</w:pPr>";
 						}
@@ -2266,7 +2295,7 @@ int docx_conversion_context::process_paragraph_attr(odf_reader::text::paragraph_
 						output_stream() << L"<w:numId w:val=\"" << list_styles.id_outline() << L"\"/>"; // check bug 51965
 						output_stream() << L"</w:numPr>";
 					}
-					output_stream() << L"<w:outlineLvl w:val=\"" << *outline_level << L"\"/>";
+					output_stream() << L"<w:outlineLvl w:val=\"" << (*outline_level > 0 ? *outline_level - 1 : 0) << L"\"/>"; // OOXML levels are 0-based, ODF levels 1-based
 				}
 
 				if (!get_text_tracked_context().dumpRPrInsDel_.empty())

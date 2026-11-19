@@ -753,7 +753,8 @@ void a::docx_convert(oox::docx_conversion_context & Context)
 	Context.finish_run();    
 	
 	std::wostream& _Wostream = Context.output_stream();
-	if (Context.is_table_content() || office_target_frame_name_ || ref[0] == L'#')
+	// A link with a target frame (LibreOffice "open in new window") is still an external link unless it points inside the document
+	if (Context.is_table_content() || ref[0] == L'#')
 	{
 		size_t pos_outline = ref.find(L"|outline");
 		if (std::wstring::npos != pos_outline)//without #

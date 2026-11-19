@@ -33,6 +33,7 @@
 #include "serialize_elements.h"
 #include "odfcontext.h"
 #include "style_paragraph_properties.h"
+#include "text_elements.h"
 
 namespace cpdoccore { 
 namespace odf_reader {
@@ -213,6 +214,7 @@ void office_text::docx_convert(oox::docx_conversion_context & Context)
 			}
 
 			_CP_OPT(std::wstring) next_master_name = Context.get_next_master_page_name();
+			const bool explicit_switch = masterPageName && !next_master_name;
 			if (next_master_name)
 			{
 				masterPageName = *next_master_name;
@@ -225,10 +227,14 @@ void office_text::docx_convert(oox::docx_conversion_context & Context)
 
 				if (false == masterPageNameLayout.empty())
 				{
+					const std::wstring previousMasterPageName = Context.get_master_page_name();
 					if (true == Context.set_master_page_name(*masterPageName))
 					{
 						Context.remove_page_properties();
 						Context.add_page_properties(masterPageNameLayout);
+						// only a switch that changes the page properties opens a new section (and a new page)
+						if (explicit_switch && false == Context.root()->odf_context().pageLayoutContainer().compare_page_properties(previousMasterPageName, *masterPageName))
+							Context.set_section_page_break(true);
 					}
 				}
 			}
@@ -274,6 +280,9 @@ void office_text::docx_convert(oox::docx_conversion_context & Context)
 				}
 			}
 		} 
+		if (i + 1 == content_.size() && content_[i]->get_type() == typeTextSection)
+			dynamic_cast<text::section*>(content_[i].get())->set_last_in_body(true);
+
 		content_[i]->docx_convert(Context);
     }
     Context.end_office_text();

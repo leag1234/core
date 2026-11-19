@@ -186,6 +186,9 @@ namespace Oox2Odf
 		void convert_footnote		(int oox_ref_id);
 		void convert_endnote		(int oox_ref_id);
 		void convert_comment		(int oox_comm_id);
+		void convert_global_comments();
+		bool global_comments_done = false;
+		OOX::Logic::CSectionProperty *prev_page_section_props = NULL;
         void convert_hdr_ftr		(std::wstring sId);
 
 		void convert(OOX::Logic::CSdtContent			*oox_sdt);

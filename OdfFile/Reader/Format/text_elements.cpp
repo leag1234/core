@@ -357,11 +357,18 @@ void paragraph::docx_convert(oox::docx_conversion_context & Context, _CP_OPT(std
 
 	if (!Context.process_headers_footers_ && (next_section_ || next_end_section_)) // remove in text::section  - GreekSynopsis.odt
 	{
-		if( !flag_for_emplicit_end )
-        {
-            Context.get_section_context().get_last().is_dump_ = true;
-            is_empty = false;
-        }
+		// The last paragraph of a text:section (or the one before it) carries the section properties (columns...)
+		// of the section it ends. The old implicit end flag stayed set after the first section and suppressed all
+		// the following ones, so only one section break was ever written and the columns were lost.
+		bool needed = false; // sections written by other elements (indexes, lists...) keep their section break
+		if (next_section_)		needed = needed || !next_section_ptr_ || next_section_ptr_->has_columns(Context);
+		if (next_end_section_)	needed = needed || !end_section_ptr_ || end_section_ptr_->has_columns(Context);
+
+		if (needed)
+		{
+			Context.get_section_context().get_last().is_dump_ = true;
+			is_empty = false;
+		}
 	}
     std::wstringstream strm;
     if (Context.process_page_properties(strm))
@@ -486,6 +493,7 @@ void paragraph::docx_convert(oox::docx_conversion_context & Context, _CP_OPT(std
 			{
 				Context.remove_page_properties();
 				Context.add_page_properties(masterPageNameLayout);
+				Context.set_section_page_break(true); // the paragraph that follows starts a new page with this page style
 			}
 		}
 	}
@@ -757,11 +765,11 @@ void section::afterCreate()
     {
         if (p *lastPar = dynamic_cast<p*>(dynamic_cast<p*>(context->get_last_paragraph())))
         {
-            lastPar->paragraph_.set_next_section(true);        
+            lastPar->paragraph_.set_next_section(true, this);        
         }
 		else if (h *lastPar = dynamic_cast<h*>(dynamic_cast<p*>(context->get_last_paragraph())))
         {
-            lastPar->paragraph_.set_next_section(true);        
+            lastPar->paragraph_.set_next_section(true, this);        
         }
 	}
 	office_element::afterCreate();
@@ -773,14 +781,26 @@ void section::afterReadContent()
 	{
 		if (p *lastPar = dynamic_cast<p*>(dynamic_cast<p*>(context->get_last_paragraph())))
 		{
-			lastPar->paragraph_.set_next_end_section(true);
+			lastPar->paragraph_.set_next_end_section(true, this);
 		}
 		else if (h *lastPar = dynamic_cast<h*>(dynamic_cast<p*>(context->get_last_paragraph())))
 		{
-			lastPar->paragraph_.set_next_end_section(true);
+			lastPar->paragraph_.set_next_end_section(true, this);
 		}
 	}
 	office_element::afterReadContent();
+}
+
+bool section::has_columns(oox::docx_conversion_context & Context) const
+{
+	const style_instance * secStyle = Context.root()->odf_context().styleContainer().style_by_name(section_attr_.style_name_.get_value_or(L""), odf_types::style_family::Section, false);
+	if (!secStyle || !secStyle->content()) return false;
+
+	style_section_properties * sectPr = secStyle->content()->get_style_section_properties();
+	if (!sectPr) return false;
+
+	style_columns * columns = dynamic_cast<style_columns *>(sectPr->style_columns_.get());
+	return columns && columns->fo_column_count_ && *columns->fo_column_count_ > 1;
 }
 void section::add_attributes( const xml::attributes_wc_ptr & Attributes )
 {
@@ -801,6 +821,15 @@ void section::add_child_element( xml::sax * Reader, const std::wstring & Ns, con
 
 void section::docx_convert(oox::docx_conversion_context & Context)
 {
+	if (last_in_body_ && !content_.empty() && false == Context.get_drawing_state_content())
+	{
+		// the section ends the document: no section break after its last paragraph, the section properties of the
+		// body (written last) are the ones of this section
+		if (p *lastPar = dynamic_cast<p*>(content_.back().get()))
+			lastPar->paragraph_.set_next_end_section(false);
+		else if (h *lastHead = dynamic_cast<h*>(content_.back().get()))
+			lastHead->paragraph_.set_next_end_section(false);
+	}
 	bool bAddSection = false;
 	if ( false == Context.get_drawing_state_content())
 	{
@@ -831,10 +860,14 @@ void section::docx_convert(oox::docx_conversion_context & Context)
 
 				if (false == masterPageNameLayout.empty())
 				{
-					Context.set_master_page_name(*masterPageName); //checking that the topic really exists????
+					const std::wstring previousMasterPageName = Context.get_master_page_name();
+					const bool changed = Context.set_master_page_name(*masterPageName); //checking that the topic really exists????
 					
 					Context.remove_page_properties();
 					Context.add_page_properties(masterPageNameLayout);
+					// only a switch that changes the page properties opens a new section (and a new page)
+					if (changed && false == Context.root()->odf_context().pageLayoutContainer().compare_page_properties(previousMasterPageName, *masterPageName))
+						Context.set_section_page_break(true);
 				}
 			}  
 		}
@@ -856,15 +889,25 @@ void section::docx_convert(oox::docx_conversion_context & Context)
 				}
 			}
         }
-        if(i == content_.size() - 1)
-        {
-            Context.set_implicit_end(true);
-        }
         content_[i]->docx_convert(Context);
     }
 	if (bAddSection)
 	{
-		Context.get_section_context().get_last().is_dump_ = true;
+		// the last paragraph of the section normally carried its section properties already (and the section was
+		// dropped); otherwise they are written with the next paragraph
+		if (Context.get_section_context().get_last().name_ == section_attr_.name_)
+		{
+			if (has_columns(Context))
+				Context.get_section_context().get_last().is_dump_ = true;
+			else
+			{
+				// one column: no section break to write; the page style in force at its end stays in force
+				const std::wstring pageProperties = Context.get_page_properties();
+				Context.get_section_context().remove_section();
+				Context.remove_page_properties();
+				Context.add_page_properties(pageProperties);
+			}
+		}
 		Context.last_dump_page_properties(false);
 	}
 }

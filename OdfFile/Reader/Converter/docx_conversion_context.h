@@ -481,19 +481,22 @@ public:
 			ref_end_.push_back(pFind->second);		
 		}
 	}
-	void start_comment(const std::wstring & content, const std::wstring & author, const std::wstring & date, _CP_OPT(std::wstring) name)
+	// ranged: the annotation has an office:annotation-end (named). Otherwise it is a point comment and gets an
+	// empty range (start, end and reference together) so that its position survives in the editor.
+	void start_comment(const std::wstring & content, const std::wstring & author, const std::wstring & date, _CP_OPT(std::wstring) name, bool ranged = true)
 	{
 		int id = comments_.size() + 1;
 		_comment_desc new_comment(content, id, author, date);
 		
-		if ((name) && (false == name->empty()))
+		if (ranged && (name) && (false == name->empty()))
 		{
 			comments_map_.insert(std::make_pair(*name, id));
 			ref_start_.push_back(id);
 		}
 		else
 		{
-			ref_.push_back(id);
+			ref_start_.push_back(id);
+			ref_end_.push_back(id);
 		}
 		comments_.push_back(new_comment);
 	}
@@ -875,6 +878,11 @@ public:
 	void set_page_break		(bool val);
     bool get_page_break		();
 
+	// the section that is being written began with a page style switch (paragraph with style:master-page-name):
+	// its section break is a "next page" one. Consumed (cleared) when the section properties are written.
+	void set_section_page_break	(bool val)	{ section_page_break_ = val; }
+	bool get_section_page_break	() const	{ return section_page_break_; }
+
 	void set_temp_style_name( const std::wstring& val );
 	std::wstring get_temp_style_name() const;
 	
@@ -1095,6 +1103,7 @@ private:
 	int page_break_after_; // 0 = false, 1 - column, 2 -page
     int page_break_before_;
 	bool page_break_;
+	bool section_page_break_ = false;
 
 	bool in_automatic_style_; 
 	bool in_drawing_content_;

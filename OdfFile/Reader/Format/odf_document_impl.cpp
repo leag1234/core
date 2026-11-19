@@ -1225,6 +1225,7 @@ bool odf_document::Impl::docx_convert(oox::docx_conversion_context & Context)
         content_xml_->docx_convert(Context);
    
 	Context.end_document();
+	clear_annotation_end_names();
 
     // Process the list styles after the document is converted,
     // since during the document conversion process we can add styles -

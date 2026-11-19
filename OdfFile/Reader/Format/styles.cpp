@@ -1652,13 +1652,19 @@ void style_page_layout_properties::docx_serialize(std::wostream & strm, oox::doc
 			
 			CP_XML_NODE(L"w:type")
 			{				
-				if (change_page_layout && Context.get_page_break()) // check bug 76397
+				// A page style switch (paragraph with style:master-page-name) starts a new page: the section it opens
+				// is a "next page" one. Sections opened any other way (text:section, soft page breaks) stay continuous
+				// (bug 76397: a text:section must not be treated like a page properties change).
+				if (Context.get_section_page_break() && false == Context.process_headers_footers_)
 				{
 					CP_XML_ATTR(L"w:val", L"nextPage");
 				}
 				else			
 					CP_XML_ATTR(L"w:val", L"continuous");
 			}		
+
+			if (false == Context.process_headers_footers_)
+				Context.set_section_page_break(false); // consumed: the next section starts again as a continuous one
 
 			std::wstring masterPageName = Context.get_master_page_name();
 			bool res = Context.get_headers_footers().write_sectPr(masterPageName, change_page_layout, CP_XML_STREAM());

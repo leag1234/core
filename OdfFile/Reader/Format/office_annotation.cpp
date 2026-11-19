@@ -28,6 +28,7 @@
 #include <xml/xmlchar.h>
 #include <xml/utils.h>
 
+#include <set>
 #include "serialize_elements.h"
 
 #include "odf_document.h"
@@ -62,12 +63,28 @@ void office_annotation_attr::add_attributes( const xml::attributes_wc_ptr & Attr
 }
 
 //-------------------------------------------------------------------------
+namespace
+{
+	// Names of the annotations that have an office:annotation-end. An annotation without one is a point
+	// comment: it gets an empty range in the output, so that the editor keeps its position.
+	std::set<std::wstring> & annotation_end_names()
+	{
+		static thread_local std::set<std::wstring> names;
+		return names;
+	}
+}
+void clear_annotation_end_names()
+{
+	annotation_end_names().clear();
+}
 const wchar_t * office_annotation_end::ns = L"office";
 const wchar_t * office_annotation_end::name = L"annotation-end";
 
 void office_annotation_end::add_attributes( const xml::attributes_wc_ptr & Attributes )
 {
 	CP_APPLY_ATTR(L"office:name", office_name_, std::wstring(L""));
+	if (false == office_name_.empty())
+		annotation_end_names().insert(office_name_);
 }
 void office_annotation_end::docx_convert(oox::docx_conversion_context & Context)
 {
@@ -139,7 +156,8 @@ void office_annotation::docx_convert(oox::docx_conversion_context & Context)
 	Context.dump_hyperlinks(Context.get_comments_context().get_rels(), oox::comment_place);
 	Context.get_mediaitems()->dump_rels(Context.get_comments_context().get_rels(), oox::comment_place);
 	
-	Context.get_comments_context().start_comment(content, author, date, office_name_);//content, date, author	
+	const bool ranged = office_name_ && annotation_end_names().count(*office_name_) > 0;
+	Context.get_comments_context().start_comment(content, author, date, office_name_, ranged);//content, date, author	
 }
 
 void office_annotation::xlsx_convert(oox::xlsx_conversion_context & Context)

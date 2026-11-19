@@ -210,7 +210,7 @@ void paragraph_format_properties::docx_convert(oox::docx_conversion_context & Co
 					}
 				_pPr << L"</w:numPr>";
 			}
-			_pPr << L"<w:outlineLvl w:val=\"" << level << L"\"/>";
+			_pPr << L"<w:outlineLvl w:val=\"" << (level > 0 ? level - 1 : 0) << L"\"/>"; // OOXML levels are 0-based, ODF levels 1-based
 		}
 	    
 		if (fo_text_align_)

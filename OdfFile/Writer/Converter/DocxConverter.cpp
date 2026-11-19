@@ -83,6 +83,33 @@ using namespace cpdoccore;
 namespace Oox2Odf
 {
 
+	template <class T> double points(const nullable<T> & val)
+	{
+		return val.IsInit() ? val->ToPoints() : -1.;
+	}
+	// same page size, orientation and margins: the sections can share one page style
+	bool same_page_geometry(OOX::Logic::CSectionProperty* props1, OOX::Logic::CSectionProperty* props2)
+	{
+		if (!props1 || !props2) return false;
+
+		if (props1->m_oPgSz.IsInit() != props2->m_oPgSz.IsInit()) return false;
+		if (props1->m_oPgSz.IsInit())
+		{
+			if (fabs(points(props1->m_oPgSz->m_oW) - points(props2->m_oPgSz->m_oW)) > 1.) return false;
+			if (fabs(points(props1->m_oPgSz->m_oH) - points(props2->m_oPgSz->m_oH)) > 1.) return false;
+			if (props1->m_oPgSz->m_oOrient.IsInit() != props2->m_oPgSz->m_oOrient.IsInit()) return false;
+			if (props1->m_oPgSz->m_oOrient.IsInit() && props1->m_oPgSz->m_oOrient->GetValue() != props2->m_oPgSz->m_oOrient->GetValue()) return false;
+		}
+		if (props1->m_oPgMar.IsInit() != props2->m_oPgMar.IsInit()) return false;
+		if (props1->m_oPgMar.IsInit())
+		{
+			if (fabs(points(props1->m_oPgMar->m_oLeft) - points(props2->m_oPgMar->m_oLeft)) > 1.) return false;
+			if (fabs(points(props1->m_oPgMar->m_oRight) - points(props2->m_oPgMar->m_oRight)) > 1.) return false;
+			if (fabs(points(props1->m_oPgMar->m_oTop) - points(props2->m_oPgMar->m_oTop)) > 1.) return false;
+			if (fabs(points(props1->m_oPgMar->m_oBottom) - points(props2->m_oPgMar->m_oBottom)) > 1.) return false;
+		}
+		return true;
+	}
 	bool compare (OOX::Logic::CSectionProperty* props1, OOX::Logic::CSectionProperty* props2)
 	{
 		size_t cols_1 = 1, cols_2 = 1;
@@ -936,6 +963,9 @@ void DocxConverter::convert(OOX::Logic::CParagraph *oox_paragraph)
 			odt_context->set_master_page_name(odt_context->page_layout_context()->last_master() ?
 											  odt_context->page_layout_context()->last_master()->get_name() : L"");
 		}		
+
+		if (false == global_comments_done && oox_current_child_document == NULL) // the first paragraph of the body
+			convert_global_comments();
 	}
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1051,7 +1081,9 @@ void DocxConverter::convert(OOX::Logic::CRun *oox_run)//wordprocessing 22.1.2.87
 						}
 					}
 
-					if (beforeAnyText) // if there was no text, insert break
+					// A text-wrapping break (Shift+Enter) is a line break at its own place in the paragraph. Only page and
+					// column breaks may be deferred to the next paragraph (bug 73365); deferring a line break lost it.
+					if (beforeAnyText || type == SimpleTypes::brtypeTextWrapping) // if there was no text, insert break
 					{
 						bool need_restart_para = odt_context->text_context()->set_type_break(type, pBr->m_oClear.GetValue());
 
@@ -1932,6 +1964,17 @@ void DocxConverter::convert(OOX::Logic::CSectionProperty* oox_section_pr, bool b
 		}
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	// A continuous section with the page geometry of the previous one, no headers or footers of its own and no
+	// title page flows on: every page style starts a new page in an ODT, so it does not get a page style.
+	if (master_name.empty() && !bSection && continuous && !bAlways && prev_page_section_props
+		&& oox_section_pr->m_arrHeaderReference.empty() && oox_section_pr->m_arrFooterReference.empty()
+		&& false == oox_section_pr->m_oTitlePg.IsInit()
+		&& same_page_geometry(prev_page_section_props, oox_section_pr))
+	{
+		return;
+	}
+	if (master_name.empty()) prev_page_section_props = oox_section_pr;
 
 	bool bDefault = (master_name == L"Standard");
 
@@ -4616,6 +4659,41 @@ void DocxConverter::convert_comment(int oox_comm_id)
 		}
 	}
 	oox_current_child_document = back_document;
+}
+// Comments the editor keeps for the whole document (no text range, word/commentsDocument.xml): ODF has no such thing, they
+// become comments at the start of the first paragraph instead of being dropped.
+void DocxConverter::convert_global_comments()
+{
+	global_comments_done = true;
+
+	if (!docx_document || !docx_document->m_pDocumentComments) return;
+
+	OOX::CDocumentComments *pComments = docx_document->m_pDocumentComments;
+
+	for (size_t i = 0; i < pComments->m_arrComments.size(); ++i)
+	{
+		OOX::CComment* oox_comment = pComments->m_arrComments[i];
+		if (oox_comment == NULL) continue;
+
+		if (odt_context->start_comment(1000000 + (int)i) <= 0) continue;
+
+		OOX::IFileContainer* back_document = oox_current_child_document;
+		oox_current_child_document = dynamic_cast<OOX::IFileContainer*>(pComments);
+
+		odt_context->start_comment_content();
+		{
+			if (oox_comment->m_oAuthor.IsInit())	odt_context->comment_context()->set_author	(*oox_comment->m_oAuthor);
+			if (oox_comment->m_oDate.IsInit())		odt_context->comment_context()->set_date	(oox_comment->m_oDate->GetValue());
+
+			for (size_t j = 0; j < oox_comment->m_arrItems.size(); ++j)
+			{
+				convert(oox_comment->m_arrItems[j]);
+			}
+		}
+		odt_context->end_comment_content();
+
+		oox_current_child_document = back_document;
+	}
 }
 void DocxConverter::convert_footnote(int oox_ref_id)
 {
